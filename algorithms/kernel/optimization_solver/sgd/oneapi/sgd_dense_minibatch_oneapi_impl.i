@@ -234,6 +234,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
     {
         // Replace by SyclNumericTable when will be RNG on GPU
         ntBatchIndices = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
+        ntBatchIndices2 = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
     }
 
     NumericTablePtr previousBatchIndices = function->sumOfFunctionsParameter->batchIndices;
