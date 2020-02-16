@@ -237,8 +237,8 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
     }
 
     NumericTablePtr previousBatchIndices = function->sumOfFunctionsParameter->batchIndices;
-    auto ntBatchIndicesSycl              = SyclHomogenNumericTable<algorithmFPType>::create(batchSize, 1, AllocationFlag::doAllocate);
-    auto ntBatchIndices2Sycl             = SyclHomogenNumericTable<algorithmFPType>::create(batchSize, 1, AllocationFlag::doAllocate);
+    auto ntBatchIndicesSycl              = SyclHomogenNumericTable<algorithmFPType>::create(batchSize, 1, NumericTableIface::doAllocate);
+    auto ntBatchIndices2Sycl             = SyclHomogenNumericTable<algorithmFPType>::create(batchSize, 1, NumericTableIface::doAllocate);
 
     const TypeIds::Id idType                            = TypeIds::id<algorithmFPType>();
     UniversalBuffer prevWorkValueU                      = ctx.allocate(idType, argumentSize, &status);
@@ -353,7 +353,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
         {
             if (!isFirstInitialized)
             {
-                sumOfFunctionsParameter->batchIndices = ntBatchIndicesSycl;
+                function->sumOfFunctionsParameter->batchIndices = ntBatchIndicesSycl;
                 isFirstInitialized                    = true;
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());
@@ -362,7 +362,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
         {
             if (!isSecondInitialized)
             {
-                sumOfFunctionsParameter->batchIndices = ntBatchIndices2Sycl;
+                function->sumOfFunctionsParameter->batchIndices = ntBatchIndices2Sycl;
                 isSecondInitialized                   = true;
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());

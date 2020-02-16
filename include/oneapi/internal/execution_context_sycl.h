@@ -279,7 +279,7 @@ public:
     }
 
     void copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count, services::Status * status = nullptr,
-              isSync = true) DAAL_C11_OVERRIDE
+              bool isSync = true) DAAL_C11_OVERRIDE
     {
         DAAL_ASSERT(dest.type() == src.type());
         // TODO: Thread safe?
