@@ -299,12 +299,12 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
     services::internal::HostAppHelper host(pHost, 10);
     for (size_t epoch = startIteration; epoch < (startIteration + nIter); epoch++)
     {
-        if (epoch % (L << 1) == 0 || epoch == startIteration)
+        if ((epoch % (L << 1) == 0) || (epoch == startIteration))
         {
             learningRate = learningRateArray[(epoch / L) % learningRateLength];
             consCoeff    = consCoeffsArray[(epoch / L) % consCoeffsLength];
 
-            if (indicesStatus == user || indicesStatus == random)
+            if ((indicesStatus == user) || (indicesStatus == random))
             {
                 DAAL_ITTNOTIFY_SCOPED_TASK(generateUniform);
 
@@ -312,7 +312,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                 DAAL_CHECK_STATUS(status, rngTask.get(pValues));
                 ntBatchIndices->setArray(const_cast<int *>(pValues), ntBatchIndices->getNumberOfRows());
             }
-            if (indicesStatus == user || indicesStatus == random)
+            if ((indicesStatus == user) || (indicesStatus == random))
             {
                 DAAL_ITTNOTIFY_SCOPED_TASK(generateUniform);
 
