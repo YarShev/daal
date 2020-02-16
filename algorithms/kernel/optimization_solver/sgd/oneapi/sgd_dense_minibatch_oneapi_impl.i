@@ -291,6 +291,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
     *nProceededIterations = static_cast<int>(nIter);
 
+    bool isSync              = false;
     bool isFirst             = false;
     bool isFirstInitialized  = false;
     bool isSecondInitialized = false;
@@ -327,7 +328,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
             DAAL_CHECK_STATUS(status, ntBatchIndicesSycl->getBlockOfRows(0, 1, ReadWriteMode::writeOnly, ntBatchIndicesBDSycl));
             const services::Buffer<algorithmFPType> ntBatchIndicesBufferSycl = ntBatchIndicesBDSycl.getBuffer();
 
-            ctx.copy(ntBatchIndicesBufferSycl, 0, ntBatchIndicesBuffer, 0, batchSize, &status, false);
+            ctx.copy(ntBatchIndicesBufferSycl, 0, ntBatchIndicesBuffer, 0, batchSize, &status, isSync);
 
             BlockDescriptor<algorithmFPType> ntBatchIndices2BD;
             DAAL_CHECK_STATUS(status, ntBatchIndices2->getBlockOfRows(0, 1, ReadWriteMode::readOnly, ntBatchIndices2BD));
@@ -337,7 +338,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
             DAAL_CHECK_STATUS(status, ntBatchIndices2Sycl->getBlockOfRows(0, 1, ReadWriteMode::writeOnly, ntBatchIndices2SyclBD));
             const services::Buffer<algorithmFPType> ntBatchIndices2SyclBuffer = ntBatchIndices2SyclBD.getBuffer();
 
-            ctx.copy(ntBatchIndices2SyclBuffer, 0, ntBatchIndices2Buffer, 0, batchSize, &status, false);
+            ctx.copy(ntBatchIndices2SyclBuffer, 0, ntBatchIndices2Buffer, 0, batchSize, &status, isSync);
 
             isFirst             = false;
             isFirstInitialized  = false;
