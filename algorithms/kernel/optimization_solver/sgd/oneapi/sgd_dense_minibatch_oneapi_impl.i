@@ -333,6 +333,9 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
             ctx.copy(ntBatchIndicesBufferSycl, 0, ntBatchIndicesBuffer, 0, batchSize, &status, isSync);
 
+            ntBatchIndices->releaseBlockOfRows(ntBatchIndicesBD);
+            ntBatchIndicesSycl->releaseBlockOfRows(ntBatchIndicesBDSycl);
+
             BlockDescriptor<int> ntBatchIndices2BD;
             DAAL_CHECK_STATUS(status,
                               ntBatchIndices2->getBlockOfRows(0, ntBatchIndices2->getNumberOfRows(), ReadWriteMode::readOnly, ntBatchIndices2BD));
@@ -344,6 +347,9 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
             const services::Buffer<int> ntBatchIndices2SyclBuffer = ntBatchIndices2SyclBD.getBuffer();
 
             ctx.copy(ntBatchIndices2SyclBuffer, 0, ntBatchIndices2Buffer, 0, batchSize, &status, isSync);
+
+            ntBatchIndices2->releaseBlockOfRows(ntBatchIndices2BD);
+            ntBatchIndices2Sycl->releaseBlockOfRows(ntBatchIndices2SyclBD);
 
             isSecondPartOfIndices            = false;
             isFirstPartOfIndicesInitialized  = false;
