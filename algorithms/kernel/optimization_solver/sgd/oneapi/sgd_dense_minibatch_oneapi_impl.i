@@ -291,10 +291,10 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
     *nProceededIterations = static_cast<int>(nIter);
 
-    bool isSync                  = false;
-    bool isFirstPart             = false;
-    bool isFirstPartInitialized  = false;
-    bool isSecondPartInitialized = false;
+    bool isSync                           = false;
+    bool isSecondPartOfIndices            = false;
+    bool isFirstPartOfIndicesInitialized  = false;
+    bool isSecondPartOfIndicesInitialized = false;
 
     services::internal::HostAppHelper host(pHost, 10);
     for (size_t epoch = startIteration; epoch < (startIteration + nIter); epoch++)
@@ -303,6 +303,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
         {
             learningRate = learningRateArray[(epoch / L) % learningRateLength];
             consCoeff    = consCoeffsArray[(epoch / L) % consCoeffsLength];
+
             if (indicesStatus == user || indicesStatus == random)
             {
                 DAAL_ITTNOTIFY_SCOPED_TASK(generateUniform);
@@ -344,31 +345,31 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
             ctx.copy(ntBatchIndices2SyclBuffer, 0, ntBatchIndices2Buffer, 0, batchSize, &status, isSync);
 
-            isFirstPart             = false;
-            isFirstPartInitialized  = false;
-            isSecondPartInitialized = false;
+            isSecondPartOfIndices            = false;
+            isFirstPartOfIndicesInitialized  = false;
+            isSecondPartOfIndicesInitialized = false;
         }
 
-        if (epoch % L == 0)
+        if ((epoch % L == 0) && !(epoch == startIteration))
         {
-            isFirstPart = true;
+            isSecondPartOfIndices = true;
         }
 
-        if (isFirstPart)
+        if (isSecondPartOfIndices)
         {
-            if (!isFirstPartInitialized)
+            if (!isSecondPartOfIndicesInitialized)
             {
-                function->sumOfFunctionsParameter->batchIndices = ntBatchIndicesSycl;
-                isFirstPartInitialized                          = true;
+                function->sumOfFunctionsParameter->batchIndices = ntBatchIndices2Sycl;
+                isSecondPartOfIndicesInitialized                = true;
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());
         }
         else
         {
-            if (!isSecondPartInitialized)
+            if (!isFirstPartOfIndicesInitialized)
             {
-                function->sumOfFunctionsParameter->batchIndices = ntBatchIndices2Sycl;
-                isSecondPartInitialized                         = true;
+                function->sumOfFunctionsParameter->batchIndices = ntBatchIndicesSycl;
+                isFirstPartOfIndicesInitialized                 = true;
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());
         }
