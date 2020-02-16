@@ -233,13 +233,13 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
     if (indicesStatus == user || indicesStatus == random)
     {
         // Replace by SyclNumericTable when will be RNG on GPU
-        ntBatchIndices = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
+        ntBatchIndices  = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
         ntBatchIndices2 = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
     }
 
     NumericTablePtr previousBatchIndices = function->sumOfFunctionsParameter->batchIndices;
-    auto ntBatchIndicesSycl              = SyclHomogenNumericTable<algorithmFPType>::create(batchSize, 1, NumericTableIface::doAllocate);
-    auto ntBatchIndices2Sycl             = SyclHomogenNumericTable<algorithmFPType>::create(batchSize, 1, NumericTableIface::doAllocate);
+    auto ntBatchIndicesSycl              = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
+    auto ntBatchIndices2Sycl             = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
 
     const TypeIds::Id idType                            = TypeIds::id<algorithmFPType>();
     UniversalBuffer prevWorkValueU                      = ctx.allocate(idType, argumentSize, &status);
@@ -291,10 +291,10 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
     *nProceededIterations = static_cast<int>(nIter);
 
-    bool isSync              = false;
-    bool isFirst             = false;
-    bool isFirstInitialized  = false;
-    bool isSecondInitialized = false;
+    bool isSync                  = false;
+    bool isFirstPart             = false;
+    bool isFirstPartInitialized  = false;
+    bool isSecondPartInitialized = false;
 
     services::internal::HostAppHelper host(pHost, 10);
     for (size_t epoch = startIteration; epoch < (startIteration + nIter); epoch++)
@@ -320,51 +320,55 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                 ntBatchIndices2->setArray(const_cast<int *>(pValues2), ntBatchIndices2->getNumberOfRows());
             }
 
-            BlockDescriptor<algorithmFPType> ntBatchIndicesBD;
-            DAAL_CHECK_STATUS(status, ntBatchIndices->getBlockOfRows(0, 1, ReadWriteMode::readOnly, ntBatchIndicesBD));
-            const services::Buffer<algorithmFPType> ntBatchIndicesBuffer = ntBatchIndicesBD.getBuffer();
+            BlockDescriptor<int> ntBatchIndicesBD;
+            DAAL_CHECK_STATUS(status,
+                              ntBatchIndices->getBlockOfRows(0, ntBatchIndices->getNumberOfRows(), ReadWriteMode::readOnly, ntBatchIndicesBD));
+            const services::Buffer<int> ntBatchIndicesBuffer = ntBatchIndicesBD.getBuffer();
 
-            BlockDescriptor<algorithmFPType> ntBatchIndicesBDSycl;
-            DAAL_CHECK_STATUS(status, ntBatchIndicesSycl->getBlockOfRows(0, 1, ReadWriteMode::writeOnly, ntBatchIndicesBDSycl));
-            const services::Buffer<algorithmFPType> ntBatchIndicesBufferSycl = ntBatchIndicesBDSycl.getBuffer();
+            BlockDescriptor<int> ntBatchIndicesBDSycl;
+            DAAL_CHECK_STATUS(
+                status, ntBatchIndicesSycl->getBlockOfRows(0, ntBatchIndicesSycl->getNumberOfRows(), ReadWriteMode::writeOnly, ntBatchIndicesBDSycl));
+            const services::Buffer<int> ntBatchIndicesBufferSycl = ntBatchIndicesBDSycl.getBuffer();
 
             ctx.copy(ntBatchIndicesBufferSycl, 0, ntBatchIndicesBuffer, 0, batchSize, &status, isSync);
 
-            BlockDescriptor<algorithmFPType> ntBatchIndices2BD;
-            DAAL_CHECK_STATUS(status, ntBatchIndices2->getBlockOfRows(0, 1, ReadWriteMode::readOnly, ntBatchIndices2BD));
-            const services::Buffer<algorithmFPType> ntBatchIndices2Buffer = ntBatchIndices2BD.getBuffer();
+            BlockDescriptor<int> ntBatchIndices2BD;
+            DAAL_CHECK_STATUS(status,
+                              ntBatchIndices2->getBlockOfRows(0, ntBatchIndices2->getNumberOfRows(), ReadWriteMode::readOnly, ntBatchIndices2BD));
+            const services::Buffer<int> ntBatchIndices2Buffer = ntBatchIndices2BD.getBuffer();
 
-            BlockDescriptor<algorithmFPType> ntBatchIndices2SyclBD;
-            DAAL_CHECK_STATUS(status, ntBatchIndices2Sycl->getBlockOfRows(0, 1, ReadWriteMode::writeOnly, ntBatchIndices2SyclBD));
-            const services::Buffer<algorithmFPType> ntBatchIndices2SyclBuffer = ntBatchIndices2SyclBD.getBuffer();
+            BlockDescriptor<int> ntBatchIndices2SyclBD;
+            DAAL_CHECK_STATUS(status, ntBatchIndices2Sycl->getBlockOfRows(0, ntBatchIndices2Sycl->getNumberOfRows(), ReadWriteMode::writeOnly,
+                                                                          ntBatchIndices2SyclBD));
+            const services::Buffer<int> ntBatchIndices2SyclBuffer = ntBatchIndices2SyclBD.getBuffer();
 
             ctx.copy(ntBatchIndices2SyclBuffer, 0, ntBatchIndices2Buffer, 0, batchSize, &status, isSync);
 
-            isFirst             = false;
-            isFirstInitialized  = false;
-            isSecondInitialized = false;
+            isFirstPart             = false;
+            isFirstPartInitialized  = false;
+            isSecondPartInitialized = false;
         }
 
         if (epoch % L == 0)
         {
-            isFirst = true;
+            isFirstPart = true;
         }
 
-        if (isFirst)
+        if (isFirstPart)
         {
-            if (!isFirstInitialized)
+            if (!isFirstPartInitialized)
             {
                 function->sumOfFunctionsParameter->batchIndices = ntBatchIndicesSycl;
-                isFirstInitialized                    = true;
+                isFirstPartInitialized                          = true;
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());
         }
         else
         {
-            if (!isSecondInitialized)
+            if (!isSecondPartInitialized)
             {
                 function->sumOfFunctionsParameter->batchIndices = ntBatchIndices2Sycl;
-                isSecondInitialized                   = true;
+                isSecondPartInitialized                         = true;
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());
         }
