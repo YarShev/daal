@@ -125,9 +125,11 @@ private:
         void * srcArray;
         size_t srcOffset;
         size_t count;
+        bool isSync;
 
-        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dst, size_t desOffset, void * src, size_t srcOffset, size_t count)
-            : queue(queue), dstUnivers(dst), dstOffset(desOffset), srcArray(src), srcOffset(srcOffset), count(count)
+        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dst, size_t desOffset, void * src, size_t srcOffset, size_t count,
+                         bool isSync = true)
+            : queue(queue), dstUnivers(dst), dstOffset(desOffset), srcArray(src), srcOffset(srcOffset), count(count), isSync(isSync)
         {}
 
         template <typename T>
@@ -139,14 +141,18 @@ private:
                 auto dst_acc = dst.template get_access<cl::sycl::access::mode::write>(cgh, cl::sycl::range<1>(count), cl::sycl::id<1>(dstOffset));
                 cgh.copy(src, dst_acc);
             });
-            event.wait();
+            if (isSync)
+            {
+                event.wait();
+            }
         }
     };
 
 public:
-    static void copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, void * src, size_t srcOffset, size_t count)
+    static void copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, void * src, size_t srcOffset, size_t count,
+                     bool isSync = true)
     {
-        Execute op(queue, dest, dstOffset, src, srcOffset, count);
+        Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
         TypeDispatcher::dispatch(dest.type(), op);
     }
 };
@@ -163,8 +169,11 @@ private:
         cl::sycl::queue & queue;
         UniversalBuffer & dstUnivers;
         double value;
+        bool isSync;
 
-        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dest, double value) : queue(queue), dstUnivers(dest), value(value) {}
+        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true)
+            : queue(queue), dstUnivers(dest), value(value), isSync(isSync)
+        {}
 
         template <typename T>
         void operator()(Typelist<T>)
@@ -174,14 +183,17 @@ private:
                 auto acc = dst.template get_access<cl::sycl::access::mode::write>(cgh);
                 cgh.fill(acc, static_cast<T>(value));
             });
-            event.wait();
+            if (isSync)
+            {
+                event.wait();
+            }
         }
     };
 
 public:
-    static void fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value)
+    static void fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true)
     {
-        Execute op(queue, dest, value);
+        Execute op(queue, dest, value, isSync);
         TypeDispatcher::dispatch(dest.type(), op);
     }
 };

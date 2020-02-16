@@ -350,7 +350,7 @@ public:
     virtual void copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count, services::Status * status,
                       bool isSync = true) = 0;
 
-    virtual void fill(UniversalBuffer dest, double value, services::Status * status) = 0;
+    virtual void fill(UniversalBuffer dest, double value, services::Status * status, bool isSync = true) = 0;
 
     virtual UniversalBuffer allocate(TypeId type, size_t bufferSize, services::Status * status) = 0;
 
@@ -358,7 +358,8 @@ public:
 
     virtual InfoDevice & getInfoDevice() = 0;
 
-    virtual void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status) = 0;
+    virtual void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status,
+                      bool isSync = true) = 0;
 };
 
 /**
@@ -438,7 +439,7 @@ public:
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
     }
 
-    void fill(UniversalBuffer dest, double value, services::Status * status = NULL) DAAL_C11_OVERRIDE
+    void fill(UniversalBuffer dest, double value, services::Status * status = NULL, bool isSync = true) DAAL_C11_OVERRIDE
     {
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
     }
@@ -453,7 +454,8 @@ public:
 
     InfoDevice & getInfoDevice() DAAL_C11_OVERRIDE { return _infoDevice; }
 
-    void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status = NULL) DAAL_C11_OVERRIDE
+    void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status = NULL,
+              bool isSync = true) DAAL_C11_OVERRIDE
     {
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
     }

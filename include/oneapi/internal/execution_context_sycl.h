@@ -293,12 +293,12 @@ public:
         }
     }
 
-    void fill(UniversalBuffer dest, double value, services::Status * status = nullptr) DAAL_C11_OVERRIDE
+    void fill(UniversalBuffer dest, double value, services::Status * status = nullptr, bool isSync = true) DAAL_C11_OVERRIDE
     {
         // TODO: Thread safe?
         try
         {
-            BufferFiller::fill(_deviceQueue, dest, value);
+            BufferFiller::fill(_deviceQueue, dest, value, isSync);
         }
         catch (cl::sycl::exception const & e)
         {
@@ -310,13 +310,13 @@ public:
 
     InfoDevice & getInfoDevice() DAAL_C11_OVERRIDE { return _infoDevice; }
 
-    void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count,
-              services::Status * status = nullptr) DAAL_C11_OVERRIDE
+    void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status = nullptr,
+              bool isSync = true) DAAL_C11_OVERRIDE
     {
         // TODO: Thread safe?
         try
         {
-            ArrayCopier::copy(_deviceQueue, dest, desOffset, src, srcOffset, count);
+            ArrayCopier::copy(_deviceQueue, dest, desOffset, src, srcOffset, count, isSync);
         }
         catch (cl::sycl::exception const & e)
         {
