@@ -98,6 +98,10 @@ private:
             {
                 event.wait();
             }
+            else
+            {
+                dst.set_write_back(false);
+            }
         }
     };
 
@@ -145,6 +149,10 @@ private:
             {
                 event.wait();
             }
+            else
+            {
+                dst.set_write_back(false);
+            }
         }
     };
 
@@ -186,6 +194,10 @@ private:
             if (isSync)
             {
                 event.wait();
+            }
+            else
+            {
+                dst.set_write_back(false);
             }
         }
     };

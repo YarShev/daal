@@ -238,11 +238,14 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
     if (indicesStatus == user || indicesStatus == random)
     {
-        ntBatchIndices  = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
-        ntBatchIndices2 = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
+        ntBatchIndices      = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
+        ntBatchIndices2     = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
+        ntBatchIndicesSycl  = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
+        ntBatchIndices2Sycl = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
     }
 
-    NumericTablePtr previousBatchIndices = function->sumOfFunctionsParameter->batchIndices;
+    NumericTablePtr previousBatchIndices            = function->sumOfFunctionsParameter->batchIndices;
+    function->sumOfFunctionsParameter->batchIndices = ntBatchIndices;
 
     const TypeIds::Id idType                            = TypeIds::id<algorithmFPType>();
     UniversalBuffer prevWorkValueU                      = ctx.allocate(idType, argumentSize, &status);
@@ -319,10 +322,6 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                                   ntBatchIndices->getBlockOfRows(0, ntBatchIndices->getNumberOfRows(), ReadWriteMode::readOnly, batchIndicesBD));
                 const services::Buffer<int> batchIndicesBuffer = batchIndicesBD.getBuffer();
 
-                if (!ntBatchIndicesSycl.get())
-                {
-                    ntBatchIndicesSycl = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
-                }
                 DAAL_CHECK_STATUS(status, ntBatchIndicesSycl->getBlockOfRows(0, ntBatchIndicesSycl->getNumberOfRows(), ReadWriteMode::writeOnly,
                                                                              batchIndicesSyclBD));
                 const services::Buffer<int> batchIndicesSyclBuffer = batchIndicesSyclBD.getBuffer();
@@ -341,10 +340,6 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                                   ntBatchIndices2->getBlockOfRows(0, ntBatchIndices2->getNumberOfRows(), ReadWriteMode::readOnly, batchIndices2BD));
                 const services::Buffer<int> batchIndices2Buffer = batchIndices2BD.getBuffer();
 
-                if (!ntBatchIndices2Sycl.get())
-                {
-                    ntBatchIndices2Sycl = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
-                }
                 DAAL_CHECK_STATUS(status, ntBatchIndices2Sycl->getBlockOfRows(0, ntBatchIndices2Sycl->getNumberOfRows(), ReadWriteMode::writeOnly,
                                                                               batchIndices2SyclBD));
                 const services::Buffer<int> batchIndices2SyclBuffer = batchIndices2SyclBD.getBuffer();
@@ -359,6 +354,11 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
         if ((epoch % L == 0) && !(epoch == startIteration))
         {
+            ntBatchIndices->releaseBlockOfRows(batchIndicesBD);
+            ntBatchIndicesSycl->releaseBlockOfRows(batchIndicesSyclBD);
+            ntBatchIndices2->releaseBlockOfRows(batchIndices2BD);
+            ntBatchIndices2Sycl->releaseBlockOfRows(batchIndices2SyclBD);
+
             isSecondPartOfIndices = true;
         }
 
@@ -407,17 +407,6 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
         }
         DAAL_CHECK_STATUS(status, makeStep(argumentSize, prevWorkValueBuff, gradientBuff, workValueBuff, learningRate, consCoeff));
         nProceededIters++;
-
-        if ((epoch % (L << 1) == 0) || (epoch == startIteration))
-        {
-            if ((indicesStatus == user) || (indicesStatus == random))
-            {
-                ntBatchIndices->releaseBlockOfRows(batchIndicesBD);
-                ntBatchIndicesSycl->releaseBlockOfRows(batchIndicesSyclBD);
-                ntBatchIndices2->releaseBlockOfRows(batchIndices2BD);
-                ntBatchIndices2Sycl->releaseBlockOfRows(batchIndices2SyclBD);
-            }
-        }
     }
 
     if (lastIterationResult)
