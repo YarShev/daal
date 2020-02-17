@@ -238,8 +238,9 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
     }
 
     NumericTablePtr previousBatchIndices = function->sumOfFunctionsParameter->batchIndices;
-    auto ntBatchIndicesSycl              = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
-    auto ntBatchIndices2Sycl             = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
+
+    auto ntBatchIndicesSycl  = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
+    auto ntBatchIndices2Sycl = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
 
     const TypeIds::Id idType                            = TypeIds::id<algorithmFPType>();
     UniversalBuffer prevWorkValueU                      = ctx.allocate(idType, argumentSize, &status);
@@ -321,35 +322,34 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                 ntBatchIndices2->setArray(const_cast<int *>(pValues2), ntBatchIndices2->getNumberOfRows());
             }
 
-            BlockDescriptor<int> ntBatchIndicesBD;
-            DAAL_CHECK_STATUS(status,
-                              ntBatchIndices->getBlockOfRows(0, ntBatchIndices->getNumberOfRows(), ReadWriteMode::readOnly, ntBatchIndicesBD));
-            const services::Buffer<int> ntBatchIndicesBuffer = ntBatchIndicesBD.getBuffer();
+            BlockDescriptor<int> batchIndicesBD;
+            DAAL_CHECK_STATUS(status, ntBatchIndices->getBlockOfRows(0, ntBatchIndices->getNumberOfRows(), ReadWriteMode::readOnly, batchIndicesBD));
+            const services::Buffer<int> batchIndicesBuffer = batchIndicesBD.getBuffer();
 
-            BlockDescriptor<int> ntBatchIndicesBDSycl;
+            BlockDescriptor<int> batchIndicesSyclBD;
             DAAL_CHECK_STATUS(
-                status, ntBatchIndicesSycl->getBlockOfRows(0, ntBatchIndicesSycl->getNumberOfRows(), ReadWriteMode::writeOnly, ntBatchIndicesBDSycl));
-            const services::Buffer<int> ntBatchIndicesBufferSycl = ntBatchIndicesBDSycl.getBuffer();
+                status, ntBatchIndicesSycl->getBlockOfRows(0, ntBatchIndicesSycl->getNumberOfRows(), ReadWriteMode::writeOnly, batchIndicesSyclBD));
+            const services::Buffer<int> batchIndicesSyclBuffer = batchIndicesSyclBD.getBuffer();
 
-            ctx.copy(ntBatchIndicesBufferSycl, 0, ntBatchIndicesBuffer, 0, batchSize, &status, isSync);
+            ctx.copy(batchIndicesSyclBuffer, 0, batchIndicesBuffer, 0, batchSize, &status, isSync);
 
-            ntBatchIndices->releaseBlockOfRows(ntBatchIndicesBD);
-            ntBatchIndicesSycl->releaseBlockOfRows(ntBatchIndicesBDSycl);
+            ntBatchIndices->releaseBlockOfRows(batchIndicesBD);
+            ntBatchIndicesSycl->releaseBlockOfRows(batchIndicesSyclBD);
 
-            BlockDescriptor<int> ntBatchIndices2BD;
+            BlockDescriptor<int> batchIndices2BD;
             DAAL_CHECK_STATUS(status,
-                              ntBatchIndices2->getBlockOfRows(0, ntBatchIndices2->getNumberOfRows(), ReadWriteMode::readOnly, ntBatchIndices2BD));
-            const services::Buffer<int> ntBatchIndices2Buffer = ntBatchIndices2BD.getBuffer();
+                              ntBatchIndices2->getBlockOfRows(0, ntBatchIndices2->getNumberOfRows(), ReadWriteMode::readOnly, batchIndices2BD));
+            const services::Buffer<int> batchIndices2Buffer = batchIndices2BD.getBuffer();
 
-            BlockDescriptor<int> ntBatchIndices2SyclBD;
+            BlockDescriptor<int> batchIndices2SyclBD;
             DAAL_CHECK_STATUS(status, ntBatchIndices2Sycl->getBlockOfRows(0, ntBatchIndices2Sycl->getNumberOfRows(), ReadWriteMode::writeOnly,
-                                                                          ntBatchIndices2SyclBD));
-            const services::Buffer<int> ntBatchIndices2SyclBuffer = ntBatchIndices2SyclBD.getBuffer();
+                                                                          batchIndices2SyclBD));
+            const services::Buffer<int> batchIndices2SyclBuffer = batchIndices2SyclBD.getBuffer();
 
-            ctx.copy(ntBatchIndices2SyclBuffer, 0, ntBatchIndices2Buffer, 0, batchSize, &status, isSync);
+            ctx.copy(batchIndices2SyclBuffer, 0, batchIndices2Buffer, 0, batchSize, &status, isSync);
 
-            ntBatchIndices2->releaseBlockOfRows(ntBatchIndices2BD);
-            ntBatchIndices2Sycl->releaseBlockOfRows(ntBatchIndices2SyclBD);
+            ntBatchIndices2->releaseBlockOfRows(batchIndices2BD);
+            ntBatchIndices2Sycl->releaseBlockOfRows(batchIndices2SyclBD);
 
             isSecondPartOfIndices            = false;
             isFirstPartOfIndicesInitialized  = false;
