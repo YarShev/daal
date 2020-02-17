@@ -229,18 +229,20 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
     const IndicesStatus indicesStatus = (batchIndices ? user : (batchSize < nTerms ? random : all));
     services::SharedPtr<HomogenNumericTableCPU<int, cpu> > ntBatchIndices;
     services::SharedPtr<HomogenNumericTableCPU<int, cpu> > ntBatchIndices2;
+    services::SharedPtr<SyclHomogenNumericTable<int> > ntBatchIndicesSycl;
+    services::SharedPtr<SyclHomogenNumericTable<int> > ntBatchIndices2Sycl;
+    BlockDescriptor<int> batchIndicesBD;
+    BlockDescriptor<int> batchIndicesSyclBD;
+    BlockDescriptor<int> batchIndices2BD;
+    BlockDescriptor<int> batchIndices2SyclBD;
 
     if (indicesStatus == user || indicesStatus == random)
     {
-        // Replace by SyclNumericTable when will be RNG on GPU
         ntBatchIndices  = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
         ntBatchIndices2 = HomogenNumericTableCPU<int, cpu>::create(batchSize, 1, &status);
     }
 
     NumericTablePtr previousBatchIndices = function->sumOfFunctionsParameter->batchIndices;
-
-    auto ntBatchIndicesSycl  = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
-    auto ntBatchIndices2Sycl = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
 
     const TypeIds::Id idType                            = TypeIds::id<algorithmFPType>();
     UniversalBuffer prevWorkValueU                      = ctx.allocate(idType, argumentSize, &status);
@@ -312,6 +314,20 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                 const int * pValues = nullptr;
                 DAAL_CHECK_STATUS(status, rngTask.get(pValues));
                 ntBatchIndices->setArray(const_cast<int *>(pValues), ntBatchIndices->getNumberOfRows());
+
+                DAAL_CHECK_STATUS(status,
+                                  ntBatchIndices->getBlockOfRows(0, ntBatchIndices->getNumberOfRows(), ReadWriteMode::readOnly, batchIndicesBD));
+                const services::Buffer<int> batchIndicesBuffer = batchIndicesBD.getBuffer();
+
+                if (!ntBatchIndicesSycl.get())
+                {
+                    ntBatchIndicesSycl = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
+                }
+                DAAL_CHECK_STATUS(status, ntBatchIndicesSycl->getBlockOfRows(0, ntBatchIndicesSycl->getNumberOfRows(), ReadWriteMode::writeOnly,
+                                                                             batchIndicesSyclBD));
+                const services::Buffer<int> batchIndicesSyclBuffer = batchIndicesSyclBD.getBuffer();
+
+                ctx.copy(batchIndicesSyclBuffer, 0, batchIndicesBuffer, 0, batchSize, &status, isSync);
             }
             if ((indicesStatus == user) || (indicesStatus == random))
             {
@@ -320,36 +336,21 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                 const int * pValues2 = nullptr;
                 DAAL_CHECK_STATUS(status, rngTask.get(pValues2));
                 ntBatchIndices2->setArray(const_cast<int *>(pValues2), ntBatchIndices2->getNumberOfRows());
+
+                DAAL_CHECK_STATUS(status,
+                                  ntBatchIndices2->getBlockOfRows(0, ntBatchIndices2->getNumberOfRows(), ReadWriteMode::readOnly, batchIndices2BD));
+                const services::Buffer<int> batchIndices2Buffer = batchIndices2BD.getBuffer();
+
+                if (!ntBatchIndices2Sycl.get())
+                {
+                    ntBatchIndices2Sycl = SyclHomogenNumericTable<int>::create(batchSize, 1, NumericTableIface::doAllocate);
+                }
+                DAAL_CHECK_STATUS(status, ntBatchIndices2Sycl->getBlockOfRows(0, ntBatchIndices2Sycl->getNumberOfRows(), ReadWriteMode::writeOnly,
+                                                                              batchIndices2SyclBD));
+                const services::Buffer<int> batchIndices2SyclBuffer = batchIndices2SyclBD.getBuffer();
+
+                ctx.copy(batchIndices2SyclBuffer, 0, batchIndices2Buffer, 0, batchSize, &status, isSync);
             }
-
-            BlockDescriptor<int> batchIndicesBD;
-            DAAL_CHECK_STATUS(status, ntBatchIndices->getBlockOfRows(0, ntBatchIndices->getNumberOfRows(), ReadWriteMode::readOnly, batchIndicesBD));
-            const services::Buffer<int> batchIndicesBuffer = batchIndicesBD.getBuffer();
-
-            BlockDescriptor<int> batchIndicesSyclBD;
-            DAAL_CHECK_STATUS(
-                status, ntBatchIndicesSycl->getBlockOfRows(0, ntBatchIndicesSycl->getNumberOfRows(), ReadWriteMode::writeOnly, batchIndicesSyclBD));
-            const services::Buffer<int> batchIndicesSyclBuffer = batchIndicesSyclBD.getBuffer();
-
-            ctx.copy(batchIndicesSyclBuffer, 0, batchIndicesBuffer, 0, batchSize, &status, isSync);
-
-            ntBatchIndices->releaseBlockOfRows(batchIndicesBD);
-            ntBatchIndicesSycl->releaseBlockOfRows(batchIndicesSyclBD);
-
-            BlockDescriptor<int> batchIndices2BD;
-            DAAL_CHECK_STATUS(status,
-                              ntBatchIndices2->getBlockOfRows(0, ntBatchIndices2->getNumberOfRows(), ReadWriteMode::readOnly, batchIndices2BD));
-            const services::Buffer<int> batchIndices2Buffer = batchIndices2BD.getBuffer();
-
-            BlockDescriptor<int> batchIndices2SyclBD;
-            DAAL_CHECK_STATUS(status, ntBatchIndices2Sycl->getBlockOfRows(0, ntBatchIndices2Sycl->getNumberOfRows(), ReadWriteMode::writeOnly,
-                                                                          batchIndices2SyclBD));
-            const services::Buffer<int> batchIndices2SyclBuffer = batchIndices2SyclBD.getBuffer();
-
-            ctx.copy(batchIndices2SyclBuffer, 0, batchIndices2Buffer, 0, batchSize, &status, isSync);
-
-            ntBatchIndices2->releaseBlockOfRows(batchIndices2BD);
-            ntBatchIndices2Sycl->releaseBlockOfRows(batchIndices2SyclBD);
 
             isSecondPartOfIndices            = false;
             isFirstPartOfIndicesInitialized  = false;
@@ -406,6 +407,17 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
         }
         DAAL_CHECK_STATUS(status, makeStep(argumentSize, prevWorkValueBuff, gradientBuff, workValueBuff, learningRate, consCoeff));
         nProceededIters++;
+
+        if ((epoch % (L << 1) == 0) || (epoch == startIteration))
+        {
+            if ((indicesStatus == user) || (indicesStatus == random))
+            {
+                ntBatchIndices->releaseBlockOfRows(batchIndicesBD);
+                ntBatchIndicesSycl->releaseBlockOfRows(batchIndicesSyclBD);
+                ntBatchIndices2->releaseBlockOfRows(batchIndices2BD);
+                ntBatchIndices2Sycl->releaseBlockOfRows(batchIndices2SyclBD);
+            }
+        }
     }
 
     if (lastIterationResult)
