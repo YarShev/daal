@@ -354,11 +354,6 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
         if ((epoch % L == 0) && !(epoch == startIteration))
         {
-            ntBatchIndices->releaseBlockOfRows(batchIndicesBD);
-            ntBatchIndicesSycl->releaseBlockOfRows(batchIndicesSyclBD);
-            ntBatchIndices2->releaseBlockOfRows(batchIndices2BD);
-            ntBatchIndices2Sycl->releaseBlockOfRows(batchIndices2SyclBD);
-
             isSecondPartOfIndices = true;
         }
 
@@ -407,6 +402,14 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
         }
         DAAL_CHECK_STATUS(status, makeStep(argumentSize, prevWorkValueBuff, gradientBuff, workValueBuff, learningRate, consCoeff));
         nProceededIters++;
+
+        if ((epoch % (L << 1) == (L << 1) - 1) && !(epoch == startIteration))
+        {
+            ntBatchIndices->releaseBlockOfRows(batchIndicesBD);
+            ntBatchIndicesSycl->releaseBlockOfRows(batchIndicesSyclBD);
+            ntBatchIndices2->releaseBlockOfRows(batchIndices2BD);
+            ntBatchIndices2Sycl->releaseBlockOfRows(batchIndices2SyclBD);
+        }
     }
 
     if (lastIterationResult)
