@@ -19,7 +19,6 @@
 #define __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
 
 #include "oneapi/internal/types_utils.h"
-#include "oneapi/internal/execution_context_sycl.h"
 
 namespace daal
 {
@@ -82,19 +81,18 @@ private:
         size_t srcOffset;
         size_t count;
         bool isSync;
-        SyclEvent event;
 
         explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dst, size_t desOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
                          bool isSync = true)
-            : queue(queue), dstUnivers(dst), dstOffset(desOffset), srcUnivers(src), srcOffset(srcOffset), count(count), isSync(isSync), dummyEvent()
+            : queue(queue), dstUnivers(dst), dstOffset(desOffset), srcUnivers(src), srcOffset(srcOffset), count(count), isSync(isSync)
         {}
 
         template <typename T>
         auto operator()(Typelist<T>) -> cl::sycl::event &
         {
-            auto src = srcUnivers.get<T>().toSycl();
-            auto dst = dstUnivers.get<T>().toSycl();
-            event    = queue.submit([&](cl::sycl::handler & cgh) {
+            auto src              = srcUnivers.get<T>().toSycl();
+            auto dst              = dstUnivers.get<T>().toSycl();
+            cl::sycl::event event = queue.submit([&](cl::sycl::handler & cgh) {
                 auto src_acc = src.template get_access<cl::sycl::access::mode::read>(cgh, cl::sycl::range<1>(count), cl::sycl::id<1>(srcOffset));
                 auto dst_acc = dst.template get_access<cl::sycl::access::mode::write>(cgh, cl::sycl::range<1>(count), cl::sycl::id<1>(dstOffset));
                 cgh.copy(src_acc, dst_acc);
