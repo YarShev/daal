@@ -320,6 +320,18 @@ struct InfoDevice
 };
 
 /**
+ *  <a name="DAAL-CLASS-ONEAPI-INTERNAL__SYCLEVENTIFACE"></a>
+ *  \brief Interface of sycl event
+ */
+class SyclEventIface
+{
+    virtual ~SyclEventIface() {}
+
+    virtual void wait()         = 0;
+    virtual void waitAndThrow() = 0;
+}
+
+/**
  *  <a name="DAAL-CLASS-ONEAPI-INTERNAL__EXECUTIONCONTEXTIFACE"></a>
  *  \brief Interface of execution context
  */
@@ -481,6 +493,7 @@ using interface1::KernelPtr;
 using interface1::ClKernelFactoryIface;
 using interface1::InfoDevice;
 using interface1::ExecutionContextIface;
+using interface1::SyclEventIface;
 using interface1::CpuKernelFactory;
 using interface1::CpuExecutionContextImpl;
 

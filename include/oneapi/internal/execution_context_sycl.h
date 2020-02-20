@@ -189,7 +189,25 @@ private:
     cl::sycl::queue & _deviceQueue;
 };
 
-class SyclExecutionContextImpl : public Base, public ExecutionContextIface
+class SyclEventImpl : public Base, public SyclEventIface
+{
+public:
+    SyclEventImpl() : _event() {}
+
+    SyclEventImpl(const cl::sycl::event & event) : _event(event) {}
+
+    void operator=(const cl::sycl::event & event) { _event = event; }
+
+    void wait() { _event.wait(); }
+
+    void waitAndThrow() { _event.wait_and_throw(); }
+
+private:
+    cl::sycl::event _event;
+}
+
+class SyclExecutionContextImpl : public Base,
+                                 public ExecutionContextIface
 {
 public:
     explicit SyclExecutionContextImpl(const cl::sycl::queue & deviceQueue)
@@ -285,7 +303,8 @@ public:
         // TODO: Thread safe?
         try
         {
-            BufferCopier::copy(_deviceQueue, dest, desOffset, src, srcOffset, count, isSync);
+            cl::sycl::event = BufferCopier::copy(_deviceQueue, dest, desOffset, src, srcOffset, count, isSync);
+            return
         }
         catch (cl::sycl::exception const & e)
         {
@@ -334,6 +353,7 @@ private:
 /** } */
 } // namespace interface1
 
+using interface1::SyclEventImpl;
 using interface1::SyclExecutionContextImpl;
 
 } // namespace internal

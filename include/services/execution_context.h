@@ -80,7 +80,7 @@ using interface1::CpuExecutionContext;
 } // namespace daal
 
 #ifdef DAAL_SYCL_INTERFACE
-#include "oneapi/internal/execution_context_sycl.h"
+    #include "oneapi/internal/execution_context_sycl.h"
 
 namespace daal
 {
@@ -88,6 +88,23 @@ namespace services
 {
 namespace interface1
 {
+class SyclEvent
+{
+private:
+    typedef daal::oneapi::internal::SyclEventIface ImplType;
+
+public:
+    ExecutionContext() {}
+
+protected:
+    explicit ExecutionContext(ImplType * impl) : _impl(impl) {}
+
+    const SharedPtr<ImplType> & getImplPtr() const { return _impl; }
+
+private:
+    SharedPtr<ImplType> _impl;
+};
+
 /** @ingroup sycl
  * @{
  */
