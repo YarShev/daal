@@ -176,6 +176,8 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
     services::Status status;
 
     ExecutionContextIface & ctx = services::Environment::getInstance()->getDefaultExecutionContext();
+    SyclEventIface * eventOfCopyIndices {};
+    SyclEventIface * eventOfCopyIndices2 {};
 
     const size_t argumentSize = inputArgument->getNumberOfRows();
     const size_t nIter        = parameter->nIterations;
@@ -326,7 +328,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                                                                              batchIndicesSyclBD));
                 const services::Buffer<int> batchIndicesSyclBuffer = batchIndicesSyclBD.getBuffer();
 
-                ctx.copy(batchIndicesSyclBuffer, 0, batchIndicesBuffer, 0, batchSize, &status, isSync);
+                eventOfCopyIndices = ctx.copy(batchIndicesSyclBuffer, 0, batchIndicesBuffer, 0, batchSize, &status, isSync);
             }
             if ((indicesStatus == user) || (indicesStatus == random))
             {
@@ -344,7 +346,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                                                                               batchIndices2SyclBD));
                 const services::Buffer<int> batchIndices2SyclBuffer = batchIndices2SyclBD.getBuffer();
 
-                ctx.copy(batchIndices2SyclBuffer, 0, batchIndices2Buffer, 0, batchSize, &status, isSync);
+                eventOfCopyIndices2 = ctx.copy(batchIndices2SyclBuffer, 0, batchIndices2Buffer, 0, batchSize, &status, isSync);
             }
 
             isSecondPartOfIndices            = false;
@@ -363,6 +365,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
             {
                 function->sumOfFunctionsParameter->batchIndices = ntBatchIndices2Sycl;
                 isSecondPartOfIndicesInitialized                = true;
+                eventOfCopyIndices2->wait();
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());
         }
@@ -372,6 +375,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
             {
                 function->sumOfFunctionsParameter->batchIndices = ntBatchIndicesSycl;
                 isFirstPartOfIndicesInitialized                 = true;
+                eventOfCopyIndices->wait();
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());
         }

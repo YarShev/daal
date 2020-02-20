@@ -50,6 +50,7 @@ private:
         void operator()(Typelist<T>)
         {
             buffer = services::Buffer<T>(cl::sycl::buffer<T, 1>(bufferSize));
+            return;
         }
     };
 
@@ -85,7 +86,7 @@ private:
         {}
 
         template <typename T>
-        auto operator()(Typelist<T>) -> cl::sycl::event &
+        auto operator()(Typelist<T>) -> cl::sycl::event
         {
             auto src              = srcUnivers.get<T>().toSycl();
             auto dst              = dstUnivers.get<T>().toSycl();
@@ -107,7 +108,7 @@ private:
 
 public:
     static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
-                     bool isSync = true) -> cl::sycl::event &
+                     bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
         return TypeDispatcher::dispatch(dest.type(), op);
@@ -137,7 +138,7 @@ private:
         {}
 
         template <typename T>
-        auto operator()(Typelist<T>) -> cl::sycl::event &
+        auto operator()(Typelist<T>) -> cl::sycl::event
         {
             auto src              = (T *)srcArray;
             auto dst              = dstUnivers.get<T>().toSycl();
@@ -158,7 +159,7 @@ private:
 
 public:
     static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, void * src, size_t srcOffset, size_t count,
-                     bool isSync = true) -> cl::sycl::event &
+                     bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
         return TypeDispatcher::dispatch(dest.type(), op);
@@ -184,7 +185,7 @@ private:
         {}
 
         template <typename T>
-        auto operator()(Typelist<T>) -> cl::sycl::event &
+        auto operator()(Typelist<T>) -> cl::sycl::event
         {
             auto dst              = dstUnivers.get<T>().toSycl();
             cl::sycl::event event = queue.submit([&](cl::sycl::handler & cgh) {
@@ -203,7 +204,7 @@ private:
     };
 
 public:
-    static auto fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true) -> cl::sycl::event &
+    static auto fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, value, isSync);
         return TypeDispatcher::dispatch(dest.type(), op);

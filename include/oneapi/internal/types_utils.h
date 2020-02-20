@@ -51,35 +51,68 @@ class TypeDispatcher
 {
 public:
     template <typename Operation>
-    static void dispatch(TypeId type, Operation && op)
+    static auto dispatch(TypeId type, Operation && op) -> void
     {
-        dispatchInternal(type, op, PrimitiveTypes());
+        return dispatchInternal(type, op, PrimitiveTypes());
     }
 
     template <typename Operation>
-    static void floatDispatch(TypeId type, Operation && op)
+    static auto floatDispatch(TypeId type, Operation && op) -> void
     {
-        dispatchInternal(type, op, FloatTypes());
+        return dispatchInternal(type, op, FloatTypes());
+    }
+
+    template <typename Operation>
+    static auto dispatch(TypeId type, Operation && op) -> cl::sycl::event
+    {
+        return dispatchInternal(type, op, PrimitiveTypes());
+    }
+
+    template <typename Operation>
+    static auto floatDispatch(TypeId type, Operation && op) -> cl::sycl::event
+    {
+        return dispatchInternal(type, op, FloatTypes());
     }
 
 private:
     template <typename Operation, typename Head, typename... Rest>
-    static void dispatchInternal(TypeId type, Operation && op, Typelist<Head, Rest...>)
+    static auto dispatchInternal(TypeId type, Operation && op, Typelist<Head, Rest...>) -> void
     {
         if (type == TypeIds::id<Head>())
         {
-            op(Typelist<Head>());
+            return op(Typelist<Head>());
         }
         else
         {
-            dispatchInternal(type, op, Typelist<Rest...>());
+            return dispatchInternal(type, op, Typelist<Rest...>());
         }
     }
 
     template <typename Operation>
-    static void dispatchInternal(TypeId type, Operation && op, Typelist<>)
+    static auto dispatchInternal(TypeId type, Operation && op, Typelist<>) -> void
     {
         DAAL_ASSERT(!"Unknown type");
+        return;
+    }
+
+    template <typename Operation, typename Head, typename... Rest>
+    static auto dispatchInternal(TypeId type, Operation && op, Typelist<Head, Rest...>) -> cl::sycl::event
+    {
+        if (type == TypeIds::id<Head>())
+        {
+            return op(Typelist<Head>());
+        }
+        else
+        {
+            return dispatchInternal(type, op, Typelist<Rest...>());
+        }
+    }
+
+    template <typename Operation>
+    static auto dispatchInternal(TypeId type, Operation && op, Typelist<>) -> cl::sycl::event
+    {
+        DAAL_ASSERT(!"Unknown type");
+        return cl::sycl::event {};
     }
 };
 

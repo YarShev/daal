@@ -211,7 +211,7 @@ class SyclExecutionContextImpl : public Base,
 {
 public:
     explicit SyclExecutionContextImpl(const cl::sycl::queue & deviceQueue)
-        : _deviceQueue(deviceQueue), _kernelFactory(_deviceQueue), _kernelScheduler(_deviceQueue)
+        : _deviceQueue(deviceQueue), _kernelFactory(_deviceQueue), _kernelScheduler(_deviceQueue), _event()
     {
         const auto & device                    = _deviceQueue.get_device();
         const cl::sycl::id<3> maxWorkItemSizes = device.get_info<cl::sycl::info::device::max_work_item_sizes>();
@@ -296,32 +296,35 @@ public:
         }
     }
 
-    void copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count, services::Status * status = nullptr,
-              bool isSync = true) DAAL_C11_OVERRIDE
+    SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count,
+                          services::Status * status = nullptr, bool isSync = true) DAAL_C11_OVERRIDE
     {
         DAAL_ASSERT(dest.type() == src.type());
         // TODO: Thread safe?
         try
         {
-            cl::sycl::event = BufferCopier::copy(_deviceQueue, dest, desOffset, src, srcOffset, count, isSync);
-            return
+            _event = BufferCopier::copy(_deviceQueue, dest, desOffset, src, srcOffset, count, isSync);
+            return _event;
         }
         catch (cl::sycl::exception const & e)
         {
             convertSyclExceptionToStatus(e, status);
+            return _event;
         }
     }
 
-    void fill(UniversalBuffer dest, double value, services::Status * status = nullptr, bool isSync = true) DAAL_C11_OVERRIDE
+    SyclEventIface & fill(UniversalBuffer dest, double value, services::Status * status = nullptr, bool isSync = true) DAAL_C11_OVERRIDE
     {
         // TODO: Thread safe?
         try
         {
-            BufferFiller::fill(_deviceQueue, dest, value, isSync);
+            _event = BufferFiller::fill(_deviceQueue, dest, value, isSync);
+            return _event;
         }
         catch (cl::sycl::exception const & e)
         {
             convertSyclExceptionToStatus(e, status);
+            return _event;
         }
     }
 
@@ -329,17 +332,19 @@ public:
 
     InfoDevice & getInfoDevice() DAAL_C11_OVERRIDE { return _infoDevice; }
 
-    void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status = nullptr,
-              bool isSync = true) DAAL_C11_OVERRIDE
+    SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status = nullptr,
+                          bool isSync = true) DAAL_C11_OVERRIDE
     {
         // TODO: Thread safe?
         try
         {
-            ArrayCopier::copy(_deviceQueue, dest, desOffset, src, srcOffset, count, isSync);
+            _event = ArrayCopier::copy(_deviceQueue, dest, desOffset, src, srcOffset, count, isSync);
+            return _event;
         }
         catch (cl::sycl::exception const & e)
         {
             convertSyclExceptionToStatus(e, status);
+            return _event;
         }
     }
 
@@ -348,6 +353,7 @@ private:
     OpenClKernelFactory _kernelFactory;
     SyclKernelScheduler _kernelScheduler;
     InfoDevice _infoDevice;
+    SyclEventImpl _event;
 };
 
 /** } */

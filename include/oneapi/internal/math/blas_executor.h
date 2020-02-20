@@ -25,7 +25,7 @@
 */
 
 #if (!defined(ONEAPI_DAAL_NO_MKL_GPU_FUNC) && defined(__SYCL_COMPILER_VERSION))
-#include "oneapi/internal/math/mkl_blas.h"
+    #include "oneapi/internal/math/mkl_blas.h"
 #endif
 
 #include "oneapi/internal/math/types.h"
@@ -132,6 +132,7 @@ public:
     {
         Execute op(queue, transa, transb, m, n, k, alpha, a_buffer, lda, offsetA, b_buffer, ldb, offsetB, beta, c_buffer, ldc, offsetC, status);
         TypeDispatcher::floatDispatch(a_buffer.type(), op);
+        return;
     }
 };
 
@@ -208,6 +209,7 @@ public:
     {
         Execute op(queue, upper_lower, trans, n, k, alpha, a_buffer, lda, offsetA, beta, c_buffer, ldc, offsetC, status);
         TypeDispatcher::floatDispatch(a_buffer.type(), op);
+        return;
     }
 };
 
@@ -218,12 +220,10 @@ public:
 class AxpyExecutor
 {
 private:
-
     template <typename algorithmFPType>
-    static bool checkSize(const int n, const services::Buffer<algorithmFPType> &buffer, const int inc)
+    static bool checkSize(const int n, const services::Buffer<algorithmFPType> & buffer, const int inc)
     {
-        if ((n - 1) * inc >= static_cast<int>(buffer.size()))
-            return true;
+        if ((n - 1) * inc >= static_cast<int>(buffer.size())) return true;
         return false;
     }
 
@@ -232,22 +232,15 @@ private:
         cl::sycl::queue & queue;
         const uint32_t n;
         const double a;
-        const UniversalBuffer& x_buffer;
+        const UniversalBuffer & x_buffer;
         const int incx;
-        UniversalBuffer& y_buffer;
+        UniversalBuffer & y_buffer;
         const int incy;
         services::Status * status;
 
-        explicit Execute(cl::sycl::queue & queue, const uint32_t n, const double a, const UniversalBuffer& x_buffer, const int incx,
-                         UniversalBuffer& y_buffer, const int incy, services::Status * status = NULL)
-            : queue(queue),
-              n(n),
-              a(a),
-              x_buffer(x_buffer),
-              incx(incx),
-              y_buffer(y_buffer),
-              incy(incy),
-              status(status)
+        explicit Execute(cl::sycl::queue & queue, const uint32_t n, const double a, const UniversalBuffer & x_buffer, const int incx,
+                         UniversalBuffer & y_buffer, const int incy, services::Status * status = NULL)
+            : queue(queue), n(n), a(a), x_buffer(x_buffer), incx(incx), y_buffer(y_buffer), incy(incy), status(status)
         {}
 
         template <typename algorithmFPType>
@@ -258,8 +251,7 @@ private:
 
             if (checkSize(n, x_buffer_t, incx) || checkSize(n, y_buffer_t, incy))
             {
-                if (status)
-                    status->add(services::ErrorIncorrectIndex);
+                if (status) status->add(services::ErrorIncorrectIndex);
                 return;
             }
 
@@ -280,6 +272,7 @@ public:
     {
         Execute op(queue, n, a, x_buffer, incx, y_buffer, incy, status);
         TypeDispatcher::floatDispatch(x_buffer.type(), op);
+        return;
     }
 };
 

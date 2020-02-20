@@ -25,7 +25,7 @@
 */
 
 #if (!defined(ONEAPI_DAAL_NO_MKL_GPU_FUNC) && defined(__SYCL_COMPILER_VERSION))
-#include "oneapi/internal/math/mkl_lapack.h"
+    #include "oneapi/internal/math/mkl_lapack.h"
 #endif
 
 #include "oneapi/internal/types_utils.h"
@@ -91,6 +91,7 @@ public:
     {
         Execute op(queue, uplo, n, a_buffer, lda, status);
         TypeDispatcher::floatDispatch(a_buffer.type(), op);
+        return;
     }
 };
 
@@ -140,6 +141,7 @@ public:
     {
         Execute op(queue, uplo, n, ny, a_buffer, lda, b_buffer, ldb, status);
         TypeDispatcher::floatDispatch(a_buffer.type(), op);
+        return;
     }
 };
 
