@@ -81,7 +81,8 @@ private:
     static SyclEventIface & dispatchInternal(TypeId type, Operation && op, Typelist<>)
     {
         DAAL_ASSERT(!"Unknown type");
-        return cl::sycl::event();
+        SyclEventIface event = cl::sycl::event();
+        return event;
     }
 };
 
@@ -94,9 +95,12 @@ struct TypeToStringConverter
     services::String result;
 
     template <typename T>
-    void operator()(Typelist<T>)
+    SyclEventIface & operator()(Typelist<T>)
     {
         result = daal::oneapi::internal::getKeyFPType<T>();
+
+        SyclEventIface dummyEvent {};
+        return dummyEvent;
     }
 };
 

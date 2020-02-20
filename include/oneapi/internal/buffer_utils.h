@@ -54,7 +54,7 @@ public:
     }
 
     template <typename T>
-    void operator()(Typelist<T>)
+    SyclEventIface & operator()(Typelist<T>)
     {
         using namespace daal::data_management;
         using namespace daal::data_management::internal;
@@ -69,6 +69,9 @@ public:
         auto destHostPtr   = destSubBuffer.toHost(readWrite);
 
         VectorDownCast<DataType, T>()(_size, srcHostPtr.get(), destHostPtr.get());
+
+        SyclEventIface dummyEvent {};
+        return dummyEvent;
     }
 
 private:
@@ -98,7 +101,7 @@ public:
     }
 
     template <typename T>
-    SyclEventIface operator()(Typelist<T>)
+    SyclEventIface & operator()(Typelist<T>)
     {
         using namespace daal::data_management;
         using namespace daal::data_management::internal;
@@ -123,9 +126,12 @@ public:
             VectorUpCast<T, DataType>()(_size, memoryBlock.get(), bufferHostPtr.get());
         }
         _dest = bufferBlock;
+
+        SyclEventIface dummyEvent {};
+        return dummyEvent;
     }
 
-    void operator()(Typelist<DataType>)
+    SyclEventIface & operator()(Typelist<DataType>)
     {
         _st = services::Status();
 
@@ -133,6 +139,9 @@ public:
         auto subbuffer = buffer.getSubBuffer(_offset, _size);
 
         _dest = subbuffer;
+
+        SyclEventIface dummyEvent {};
+        return dummyEvent;
     }
 
 private:
@@ -164,12 +173,15 @@ public:
     }
 
     template <typename T>
-    void operator()(Typelist<T>)
+    SyclEventIface & operator()(Typelist<T>)
     {
         auto buffer = _src.template get<T>();
         auto ptr    = buffer.toHost(_mode);
 
         _reinterpretedPtr = services::reinterpretPointerCast<DataType, T>(ptr);
+
+        SyclEventIface dummyEvent {};
+        return dummyEvent;
     }
 
 private:

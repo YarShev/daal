@@ -25,7 +25,7 @@
 */
 
 #if (!defined(ONEAPI_DAAL_NO_MKL_GPU_FUNC) && defined(__SYCL_COMPILER_VERSION))
-#include "oneapi/internal/math/mkl_blas.h"
+    #include "oneapi/internal/math/mkl_blas.h"
 #endif
 
 #include "oneapi/internal/math/types.h"
@@ -105,7 +105,7 @@ private:
         {}
 
         template <typename T>
-        void operator()(Typelist<T>)
+        SyclEventIface & operator()(Typelist<T>)
         {
             auto a_buffer_t = a_buffer.template get<T>();
             auto b_buffer_t = b_buffer.template get<T>();
@@ -121,6 +121,9 @@ private:
                 functor(transa, transb, m, n, k, (T)alpha, a_buffer_t, lda, offsetA, b_buffer_t, ldb, offsetB, (T)beta, c_buffer_t, ldc, offsetC);
 
             services::internal::tryAssignStatus(status, statusGemm);
+
+            SyclEventIface dummyEvent {};
+            return dummyEvent;
         }
     };
 
@@ -179,7 +182,7 @@ private:
         {}
 
         template <typename T>
-        void operator()(Typelist<T>)
+        SyclEventIface & operator()(Typelist<T>)
         {
             auto a_buffer_t = a_buffer.template get<T>();
             auto c_buffer_t = c_buffer.template get<T>();
@@ -198,6 +201,9 @@ private:
 #endif
 
             services::internal::tryAssignStatus(status, statusSyrk);
+
+            SyclEventIface dummyEvent {};
+            return dummyEvent;
         }
     };
 
@@ -218,12 +224,10 @@ public:
 class AxpyExecutor
 {
 private:
-
     template <typename algorithmFPType>
-    static bool checkSize(const int n, const services::Buffer<algorithmFPType> &buffer, const int inc)
+    static bool checkSize(const int n, const services::Buffer<algorithmFPType> & buffer, const int inc)
     {
-        if ((n - 1) * inc >= static_cast<int>(buffer.size()))
-            return true;
+        if ((n - 1) * inc >= static_cast<int>(buffer.size())) return true;
         return false;
     }
 
@@ -232,34 +236,26 @@ private:
         cl::sycl::queue & queue;
         const uint32_t n;
         const double a;
-        const UniversalBuffer& x_buffer;
+        const UniversalBuffer & x_buffer;
         const int incx;
-        UniversalBuffer& y_buffer;
+        UniversalBuffer & y_buffer;
         const int incy;
         services::Status * status;
 
-        explicit Execute(cl::sycl::queue & queue, const uint32_t n, const double a, const UniversalBuffer& x_buffer, const int incx,
-                         UniversalBuffer& y_buffer, const int incy, services::Status * status = NULL)
-            : queue(queue),
-              n(n),
-              a(a),
-              x_buffer(x_buffer),
-              incx(incx),
-              y_buffer(y_buffer),
-              incy(incy),
-              status(status)
+        explicit Execute(cl::sycl::queue & queue, const uint32_t n, const double a, const UniversalBuffer & x_buffer, const int incx,
+                         UniversalBuffer & y_buffer, const int incy, services::Status * status = NULL)
+            : queue(queue), n(n), a(a), x_buffer(x_buffer), incx(incx), y_buffer(y_buffer), incy(incy), status(status)
         {}
 
         template <typename algorithmFPType>
-        void operator()(Typelist<algorithmFPType>)
+        SyclEventIface & operator()(Typelist<algorithmFPType>)
         {
             auto x_buffer_t = x_buffer.template get<algorithmFPType>();
             auto y_buffer_t = y_buffer.template get<algorithmFPType>();
 
             if (checkSize(n, x_buffer_t, incx) || checkSize(n, y_buffer_t, incy))
             {
-                if (status)
-                    status->add(services::ErrorIncorrectIndex);
+                if (status) status->add(services::ErrorIncorrectIndex);
                 return;
             }
 
@@ -271,6 +267,9 @@ private:
 #endif
             statusAxpy = functor(n, (algorithmFPType)a, x_buffer_t, incx, y_buffer_t, incy);
             services::internal::tryAssignStatus(status, statusAxpy);
+
+            SyclEventIface dummyEvent {};
+            return dummyEvent;
         }
     };
 

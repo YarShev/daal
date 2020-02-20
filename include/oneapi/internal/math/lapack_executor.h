@@ -25,7 +25,7 @@
 */
 
 #if (!defined(ONEAPI_DAAL_NO_MKL_GPU_FUNC) && defined(__SYCL_COMPILER_VERSION))
-#include "oneapi/internal/math/mkl_lapack.h"
+    #include "oneapi/internal/math/mkl_lapack.h"
 #endif
 
 #include "oneapi/internal/types_utils.h"
@@ -71,7 +71,7 @@ private:
         {}
 
         template <typename T>
-        void operator()(Typelist<T>)
+        SyclEventIface & operator()(Typelist<T>)
         {
             auto a_buffer_t = a_buffer.template get<T>();
 
@@ -82,6 +82,9 @@ private:
 #endif
 
             services::internal::tryAssignStatus(status, functor(uplo, n, a_buffer_t, lda));
+
+            SyclEventIface dummyEvent {};
+            return dummyEvent;
         }
     };
 
@@ -119,7 +122,7 @@ private:
         {}
 
         template <typename T>
-        void operator()(Typelist<T>)
+        SyclEventIface & operator()(Typelist<T>)
         {
             auto a_buffer_t = a_buffer.template get<T>();
             auto b_buffer_t = b_buffer.template get<T>();
@@ -131,6 +134,9 @@ private:
 #endif
 
             services::internal::tryAssignStatus(status, functor(uplo, n, ny, a_buffer_t, lda, b_buffer_t, ldb));
+
+            SyclEventIface dummyEvent {};
+            return dummyEvent;
         }
     };
 
