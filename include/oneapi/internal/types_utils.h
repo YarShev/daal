@@ -19,6 +19,7 @@
 #define __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_H__
 
 #include "oneapi/internal/types.h"
+#include "oneapi/internal/execution_context.h"
 
 namespace daal
 {
@@ -51,35 +52,36 @@ class TypeDispatcher
 {
 public:
     template <typename Operation>
-    static void dispatch(TypeId type, Operation && op)
+    static SyclEventIface & dispatch(TypeId type, Operation && op)
     {
-        dispatchInternal(type, op, PrimitiveTypes());
+        return dispatchInternal(type, op, PrimitiveTypes());
     }
 
     template <typename Operation>
-    static void floatDispatch(TypeId type, Operation && op)
+    static SyclEventIface & floatDispatch(TypeId type, Operation && op)
     {
-        dispatchInternal(type, op, FloatTypes());
+        return dispatchInternal(type, op, FloatTypes());
     }
 
 private:
     template <typename Operation, typename Head, typename... Rest>
-    static void dispatchInternal(TypeId type, Operation && op, Typelist<Head, Rest...>)
+    static SyclEventIface & dispatchInternal(TypeId type, Operation && op, Typelist<Head, Rest...>)
     {
         if (type == TypeIds::id<Head>())
         {
-            op(Typelist<Head>());
+            return op(Typelist<Head>());
         }
         else
         {
-            dispatchInternal(type, op, Typelist<Rest...>());
+            return dispatchInternal(type, op, Typelist<Rest...>());
         }
     }
 
     template <typename Operation>
-    static void dispatchInternal(TypeId type, Operation && op, Typelist<>)
+    static SyclEventIface & dispatchInternal(TypeId type, Operation && op, Typelist<>)
     {
         DAAL_ASSERT(!"Unknown type");
+        return cl::sycl::event();
     }
 };
 

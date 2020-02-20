@@ -320,6 +320,22 @@ struct InfoDevice
 };
 
 /**
+ *  <a name="DAAL-CLASS-ONEAPI-INTERNAL__SYCLEVENTIFACE"></a>
+ *  \brief Interface of sycl event
+ */
+class SyclEventIface
+{
+public:
+    SyclEventIface() {}
+
+    virtual ~SyclEventIface() {}
+
+    virtual wait() {}
+    virtual waitAndThrow() {}
+    virtual setWriteBack() {}
+}
+
+/**
  *  <a name="DAAL-CLASS-ONEAPI-INTERNAL__EXECUTIONCONTEXTIFACE"></a>
  *  \brief Interface of execution context
  */
@@ -347,10 +363,10 @@ public:
     virtual void potrs(math::UpLo uplo, size_t n, size_t ny, UniversalBuffer & a_buffer, size_t lda, UniversalBuffer & b_buffer, size_t ldb,
                        services::Status * status = NULL) = 0;
 
-    virtual void copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count, services::Status * status,
-                      bool isSync = true) = 0;
+    virtual SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count,
+                                  services::Status * status) = 0;
 
-    virtual void fill(UniversalBuffer dest, double value, services::Status * status, bool isSync = true) = 0;
+    virtual SyclEventIface & fill(UniversalBuffer dest, double value, services::Status * status) = 0;
 
     virtual UniversalBuffer allocate(TypeId type, size_t bufferSize, services::Status * status) = 0;
 
@@ -358,8 +374,7 @@ public:
 
     virtual InfoDevice & getInfoDevice() = 0;
 
-    virtual void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status,
-                      bool isSync = true) = 0;
+    virtual SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status) = 0;
 };
 
 /**
@@ -433,15 +448,17 @@ public:
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
     }
 
-    void copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count, services::Status * status = NULL,
-              bool isSync = true) DAAL_C11_OVERRIDE
+    SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count,
+                          services::Status * status = NULL) DAAL_C11_OVERRIDE
     {
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
+        return SyclEventIface {};
     }
 
-    void fill(UniversalBuffer dest, double value, services::Status * status = NULL, bool isSync = true) DAAL_C11_OVERRIDE
+    SyclEventIface & fill(UniversalBuffer dest, double value, services::Status * status = NULL, bool isSync = true) DAAL_C11_OVERRIDE
     {
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
+        return SyclEventIface {};
     }
 
     UniversalBuffer allocate(TypeId type, size_t bufferSize, services::Status * status = NULL) DAAL_C11_OVERRIDE
@@ -454,10 +471,11 @@ public:
 
     InfoDevice & getInfoDevice() DAAL_C11_OVERRIDE { return _infoDevice; }
 
-    void copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status = NULL,
-              bool isSync = true) DAAL_C11_OVERRIDE
+    SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count,
+                          services::Status * status = NULL) DAAL_C11_OVERRIDE
     {
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
+        return SyclEventIface {};
     }
 
 private:

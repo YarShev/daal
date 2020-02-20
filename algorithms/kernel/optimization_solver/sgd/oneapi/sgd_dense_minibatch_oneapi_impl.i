@@ -297,7 +297,6 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
 
     *nProceededIterations = static_cast<int>(nIter);
 
-    bool isSync                           = false;
     bool isSecondPartOfIndices            = false;
     bool isFirstPartOfIndicesInitialized  = false;
     bool isSecondPartOfIndicesInitialized = false;
@@ -326,7 +325,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                                                                              batchIndicesSyclBD));
                 const services::Buffer<int> batchIndicesSyclBuffer = batchIndicesSyclBD.getBuffer();
 
-                ctx.copy(batchIndicesSyclBuffer, 0, batchIndicesBuffer, 0, batchSize, &status, isSync);
+                ctx.copy(batchIndicesSyclBuffer, 0, batchIndicesBuffer, 0, batchSize, &status);
             }
             if ((indicesStatus == user) || (indicesStatus == random))
             {
@@ -344,7 +343,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
                                                                               batchIndices2SyclBD));
                 const services::Buffer<int> batchIndices2SyclBuffer = batchIndices2SyclBD.getBuffer();
 
-                ctx.copy(batchIndices2SyclBuffer, 0, batchIndices2Buffer, 0, batchSize, &status, isSync);
+                SyclEventIface event = ctx.copy(batchIndices2SyclBuffer, 0, batchIndices2Buffer, 0, batchSize, &status);
             }
 
             isSecondPartOfIndices            = false;
@@ -363,6 +362,7 @@ services::Status SGDKernelOneAPI<algorithmFPType, miniBatch, cpu>::compute(HostA
             {
                 function->sumOfFunctionsParameter->batchIndices = ntBatchIndices2Sycl;
                 isSecondPartOfIndicesInitialized                = true;
+                event.wait();
             }
             DAAL_CHECK_STATUS(status, function->computeNoThrow());
         }
