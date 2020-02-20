@@ -206,11 +206,11 @@ class SyclKernelSchedulerArgHandler
 {
 public:
     SyclKernelSchedulerArgHandler(cl::sycl::handler & handler, SyclBufferStorage & storage, size_t argumentIndex, const KernelArgument & arg)
-        : _handler(handler), _storage(storage), _argumentIndex(argumentIndex), _argument(arg)
+        : _handler(handler), _storage(storage), _argumentIndex(argumentIndex), _argument(arg), _dummyEvent()
     {}
 
     template <typename T>
-    SyclEventIface operator()(Typelist<T>)
+    SyclEventIface & operator()(Typelist<T>)
     {
         switch (_argument.argType())
         {
@@ -221,8 +221,7 @@ public:
 
         DAAL_ASSERT(!"Unexpected kernel argument type");
 
-        SyclEventIface dummyEvent {};
-        return dummyEvent;
+        return _dummyEvent;
     }
 
 private:
@@ -274,6 +273,8 @@ private:
     size_t _argumentIndex;
     const KernelArgument & _argument;
     services::Status _status;
+
+    SyclEventIface _dummyEvent;
 };
 
 template <int dim>

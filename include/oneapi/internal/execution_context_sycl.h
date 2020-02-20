@@ -354,8 +354,8 @@ private:
 /** } */
 } // namespace interface1
 
-using interface1::SyclExecutionContextImpl;
 using interface1::SyclEvent;
+using interface1::SyclExecutionContextImpl;
 
 } // namespace internal
 } // namespace oneapi

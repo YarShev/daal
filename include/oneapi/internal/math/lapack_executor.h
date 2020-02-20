@@ -64,11 +64,11 @@ private:
         UniversalBuffer & a_buffer;
         const size_t lda;
         services::Status * status;
-        SyclEventIface _dummyEvent;
+        SyclEventIface dummyEvent;
 
         explicit Execute(cl::sycl::queue & queue, const math::UpLo uplo, const size_t n, UniversalBuffer & a_buffer, const size_t lda,
                          services::Status * status)
-            : queue(queue), uplo(uplo), n(n), a_buffer(a_buffer), lda(lda), status(status), _dummyEvent()
+            : queue(queue), uplo(uplo), n(n), a_buffer(a_buffer), lda(lda), status(status), dummyEvent()
         {}
 
         template <typename T>
@@ -84,7 +84,7 @@ private:
 
             services::internal::tryAssignStatus(status, functor(uplo, n, a_buffer_t, lda));
 
-            return _dummyEvent;
+            return dummyEvent;
         }
     };
 
@@ -115,11 +115,11 @@ private:
         UniversalBuffer & b_buffer;
         const size_t ldb;
         services::Status * status;
-        SyclEventIface _dummyEvent;
+        SyclEventIface dummyEvent;
 
         explicit Execute(cl::sycl::queue & queue, const math::UpLo uplo, const size_t n, const size_t ny, UniversalBuffer & a_buffer,
                          const size_t lda, UniversalBuffer & b_buffer, const size_t ldb, services::Status * status)
-            : queue(queue), uplo(uplo), ny(ny), n(n), a_buffer(a_buffer), lda(lda), b_buffer(b_buffer), ldb(ldb), status(status), _dummyEvent()
+            : queue(queue), uplo(uplo), ny(ny), n(n), a_buffer(a_buffer), lda(lda), b_buffer(b_buffer), ldb(ldb), status(status), dummyEvent()
         {}
 
         template <typename T>
@@ -136,7 +136,7 @@ private:
 
             services::internal::tryAssignStatus(status, functor(uplo, n, ny, a_buffer_t, lda, b_buffer_t, ldb));
 
-            return _dummyEvent;
+            return dummyEvent;
         }
     };
 

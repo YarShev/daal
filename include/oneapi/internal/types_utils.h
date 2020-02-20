@@ -85,7 +85,7 @@ private:
     }
 
 private:
-    SyclEventIface _dummyEvent;
+    static SyclEventIface _dummyEvent;
 };
 
 /**

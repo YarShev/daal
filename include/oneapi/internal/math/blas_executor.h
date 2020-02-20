@@ -79,7 +79,7 @@ private:
         const size_t ldc;
         const size_t offsetC;
         services::Status * status;
-        SyclEventIface _dummyEvent;
+        SyclEventIface dummyEvent;
 
         explicit Execute(cl::sycl::queue & queue, const math::Transpose transa, const math::Transpose transb, const size_t m, const size_t n,
                          const size_t k, const double alpha, const UniversalBuffer & a_buffer, const size_t lda, const size_t offsetA,
@@ -103,7 +103,7 @@ private:
               ldc(ldc),
               offsetC(offsetC),
               status(status),
-              _dummyEvent()
+              dummyEvent()
         {}
 
         template <typename T>
@@ -124,7 +124,7 @@ private:
 
             services::internal::tryAssignStatus(status, statusGemm);
 
-            return _dummyEvent;
+            return dummyEvent;
         }
     };
 
@@ -162,7 +162,7 @@ private:
         const size_t ldc;
         const size_t offsetC;
         services::Status * status;
-        SyclEventIface _dummyEvent;
+        SyclEventIface dummyEvent;
 
         explicit Execute(cl::sycl::queue & queue, const math::UpLo upper_lower, const math::Transpose trans, const size_t n, const size_t k,
                          const double alpha, const UniversalBuffer & a_buffer, const size_t lda, const size_t offsetA, const double beta,
@@ -181,7 +181,7 @@ private:
               ldc(ldc),
               offsetC(offsetC),
               status(status),
-              _dummyEvent()
+              dummyEvent()
         {}
 
         template <typename T>
@@ -205,7 +205,7 @@ private:
 
             services::internal::tryAssignStatus(status, statusSyrk);
 
-            return _dummyEvent;
+            return dummyEvent;
         }
     };
 
@@ -243,11 +243,11 @@ private:
         UniversalBuffer & y_buffer;
         const int incy;
         services::Status * status;
-        SyclEventIface _dummyEvent;
+        SyclEventIface dummyEvent;
 
         explicit Execute(cl::sycl::queue & queue, const uint32_t n, const double a, const UniversalBuffer & x_buffer, const int incx,
                          UniversalBuffer & y_buffer, const int incy, services::Status * status = NULL)
-            : queue(queue), n(n), a(a), x_buffer(x_buffer), incx(incx), y_buffer(y_buffer), incy(incy), status(status), _dummyEvent()
+            : queue(queue), n(n), a(a), x_buffer(x_buffer), incx(incx), y_buffer(y_buffer), incy(incy), status(status), dummyEvent()
         {}
 
         template <typename algorithmFPType>
@@ -259,7 +259,7 @@ private:
             if (checkSize(n, x_buffer_t, incx) || checkSize(n, y_buffer_t, incy))
             {
                 if (status) status->add(services::ErrorIncorrectIndex);
-                return _dummyEvent;
+                return dummyEvent;
             }
 
             services::Status statusAxpy;
@@ -271,7 +271,7 @@ private:
             statusAxpy = functor(n, (algorithmFPType)a, x_buffer_t, incx, y_buffer_t, incy);
             services::internal::tryAssignStatus(status, statusAxpy);
 
-            return _dummyEvent;
+            return dummyEvent;
         }
     };
 

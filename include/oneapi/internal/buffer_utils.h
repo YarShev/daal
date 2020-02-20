@@ -102,7 +102,7 @@ public:
     }
 
     template <typename T>
-    SyclEventIface operator()(Typelist<T>)
+    SyclEventIface & operator()(Typelist<T>)
     {
         using namespace daal::data_management;
         using namespace daal::data_management::internal;
