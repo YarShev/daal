@@ -210,7 +210,7 @@ public:
     {}
 
     template <typename T>
-    SyclEventIface & operator()(Typelist<T>)
+    SyclEventIface operator()(Typelist<T>)
     {
         switch (_argument.argType())
         {

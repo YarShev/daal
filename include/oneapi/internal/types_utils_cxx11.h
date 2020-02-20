@@ -47,7 +47,7 @@ private:
         explicit Allocate(size_t size) : bufferSize(size) {}
 
         template <typename T>
-        SyclEventIface & operator()(Typelist<T>)
+        SyclEventIface operator()(Typelist<T>)
         {
             buffer = services::Buffer<T>(cl::sycl::buffer<T, 1>(bufferSize));
 
@@ -80,13 +80,15 @@ private:
         UniversalBuffer & srcUnivers;
         size_t srcOffset;
         size_t count;
+        bool isSync;
 
-        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dst, size_t desOffset, UniversalBuffer & src, size_t srcOffset, size_t count)
-            : queue(queue), dstUnivers(dst), dstOffset(desOffset), srcUnivers(src), srcOffset(srcOffset), count(count)
+        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dst, size_t desOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
+                         bool isSync = true)
+            : queue(queue), dstUnivers(dst), dstOffset(desOffset), srcUnivers(src), srcOffset(srcOffset), count(count), isSync(isSync)
         {}
 
         template <typename T>
-        SyclEventIface & operator()(Typelist<T>)
+        SyclEventIface operator()(Typelist<T>)
         {
             auto src             = srcUnivers.get<T>().toSycl();
             auto dst             = dstUnivers.get<T>().toSycl();
@@ -95,15 +97,22 @@ private:
                 auto dst_acc = dst.template get_access<cl::sycl::access::mode::write>(cgh, cl::sycl::range<1>(count), cl::sycl::id<1>(dstOffset));
                 cgh.copy(src_acc, dst_acc);
             });
-            return event;
+            if (isSync)
+            {
+                event.wait();
+            }
+            else
+            {
+                return event;
+            }
         }
     };
 
 public:
-    static SyclEventIface & copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset,
-                                 size_t count)
+    static SyclEventIface copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset,
+                               size_t count, bool isSync = true)
     {
-        Execute op(queue, dest, dstOffset, src, srcOffset, count);
+        Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
         return TypeDispatcher::dispatch(dest.type(), op);
     }
 };
@@ -123,13 +132,15 @@ private:
         void * srcArray;
         size_t srcOffset;
         size_t count;
+        bool isSync;
 
-        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dst, size_t desOffset, void * src, size_t srcOffset, size_t count)
-            : queue(queue), dstUnivers(dst), dstOffset(desOffset), srcArray(src), srcOffset(srcOffset), count(count)
+        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dst, size_t desOffset, void * src, size_t srcOffset, size_t count,
+                         bool isSync = true)
+            : queue(queue), dstUnivers(dst), dstOffset(desOffset), srcArray(src), srcOffset(srcOffset), count(count), isSync(isSync)
         {}
 
         template <typename T>
-        SyclEventIface & operator()(Typelist<T>)
+        SyclEventIface operator()(Typelist<T>)
         {
             auto src             = (T *)srcArray;
             auto dst             = dstUnivers.get<T>().toSycl();
@@ -137,15 +148,22 @@ private:
                 auto dst_acc = dst.template get_access<cl::sycl::access::mode::write>(cgh, cl::sycl::range<1>(count), cl::sycl::id<1>(dstOffset));
                 cgh.copy(src, dst_acc);
             });
-            return event;
+            if (isSync)
+            {
+                event.wait();
+            }
+            else
+            {
+                return event;
+            }
         }
     };
 
 public:
-    static SyclEventIface & copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, void * src, size_t srcOffset, size_t count,
-                                 bool isSync = true)
+    static SyclEventIface copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, void * src, size_t srcOffset, size_t count,
+                               bool isSync = true)
     {
-        Execute op(queue, dest, dstOffset, src, srcOffset, count);
+        Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
         return TypeDispatcher::dispatch(dest.type(), op);
     }
 };
@@ -162,25 +180,35 @@ private:
         cl::sycl::queue & queue;
         UniversalBuffer & dstUnivers;
         double value;
+        bool isSync;
 
-        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dest, double value) : queue(queue), dstUnivers(dest), value(value) {}
+        explicit Execute(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true)
+            : queue(queue), dstUnivers(dest), value(value), isSync(isSync)
+        {}
 
         template <typename T>
-        SyclEventIface & operator()(Typelist<T>)
+        SyclEventIface operator()(Typelist<T>)
         {
             auto dst             = dstUnivers.get<T>().toSycl();
             SyclEventIface event = queue.submit([&](cl::sycl::handler & cgh) {
                 auto acc = dst.template get_access<cl::sycl::access::mode::write>(cgh);
                 cgh.fill(acc, static_cast<T>(value));
             });
-            return event;
+            if (isSync)
+            {
+                event.wait();
+            }
+            else
+            {
+                return event;
+            }
         }
     };
 
 public:
-    static SyclEventIface & fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value)
+    static SyclEventIface fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true)
     {
-        Execute op(queue, dest, value);
+        Execute op(queue, dest, value, isSync);
         return TypeDispatcher::dispatch(dest.type(), op);
     }
 };

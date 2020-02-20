@@ -44,7 +44,7 @@ class BufferConverterFrom
 {
 public:
     BufferConverterFrom(const UniversalBuffer & src, UniversalBuffer & dest, size_t offset, size_t size)
-        : _src(src), _dest(dest), _offset(offset), _size(size)
+        : _src(src), _dest(dest), _offset(offset), _size(size), _dummyEvent()
     {}
 
     UniversalBuffer getResult(services::Status & st)
@@ -70,8 +70,7 @@ public:
 
         VectorDownCast<DataType, T>()(_size, srcHostPtr.get(), destHostPtr.get());
 
-        SyclEventIface dummyEvent {};
-        return dummyEvent;
+        return _dummyEvent;
     }
 
 private:
@@ -81,6 +80,8 @@ private:
     UniversalBuffer _dest;
     size_t _offset;
     size_t _size;
+
+    SyclEventIface _dummyEvent;
 };
 
 /**
@@ -92,7 +93,7 @@ template <typename DataType>
 class BufferConverterTo
 {
 public:
-    BufferConverterTo(const UniversalBuffer & src, size_t offset, size_t size) : _src(src), _offset(offset), _size(size) {}
+    BufferConverterTo(const UniversalBuffer & src, size_t offset, size_t size) : _src(src), _offset(offset), _size(size), _dummyEvent() {}
 
     services::Buffer<DataType> getResult(services::Status & st)
     {
@@ -101,7 +102,7 @@ public:
     }
 
     template <typename T>
-    SyclEventIface & operator()(Typelist<T>)
+    SyclEventIface operator()(Typelist<T>)
     {
         using namespace daal::data_management;
         using namespace daal::data_management::internal;
@@ -117,7 +118,7 @@ public:
 
         if (!_st)
         {
-            return;
+            return _dummyEvent;
         }
 
         auto bufferBlock = uniBufferBlock.template get<DataType>();
@@ -127,8 +128,7 @@ public:
         }
         _dest = bufferBlock;
 
-        SyclEventIface dummyEvent {};
-        return dummyEvent;
+        return _dummyEvent;
     }
 
     SyclEventIface & operator()(Typelist<DataType>)
@@ -140,8 +140,7 @@ public:
 
         _dest = subbuffer;
 
-        SyclEventIface dummyEvent {};
-        return dummyEvent;
+        return _dummyEvent;
     }
 
 private:
@@ -152,6 +151,8 @@ private:
     size_t _size;
 
     services::Buffer<DataType> _dest;
+
+    SyclEventIface _dummyEvent;
 };
 
 /**
@@ -163,7 +164,7 @@ class BufferHostReinterpreter
 {
 public:
     BufferHostReinterpreter(const UniversalBuffer & src, const data_management::ReadWriteMode & mode, size_t size)
-        : _src(src), _mode(mode), _size(size)
+        : _src(src), _mode(mode), _size(size), _dummyEvent()
     {}
 
     services::SharedPtr<DataType> getResult(services::Status & st)
@@ -180,8 +181,7 @@ public:
 
         _reinterpretedPtr = services::reinterpretPointerCast<DataType, T>(ptr);
 
-        SyclEventIface dummyEvent {};
-        return dummyEvent;
+        return _dummyEvent;
     }
 
 private:
@@ -191,6 +191,8 @@ private:
     data_management::ReadWriteMode _mode;
     size_t _size;
     services::SharedPtr<DataType> _reinterpretedPtr;
+
+    SyclEventIface _dummyEvent;
 };
 
 /** @} */

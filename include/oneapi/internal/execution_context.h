@@ -330,10 +330,9 @@ public:
 
     virtual ~SyclEventIface() {}
 
-    virtual wait() {}
-    virtual waitAndThrow() {}
-    virtual setWriteBack() {}
-}
+    virtual void wait() {}
+    virtual void waitAndThrow() {}
+};
 
 /**
  *  <a name="DAAL-CLASS-ONEAPI-INTERNAL__EXECUTIONCONTEXTIFACE"></a>
@@ -364,9 +363,9 @@ public:
                        services::Status * status = NULL) = 0;
 
     virtual SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count,
-                                  services::Status * status) = 0;
+                                  services::Status * status, bool isSync = true) = 0;
 
-    virtual SyclEventIface & fill(UniversalBuffer dest, double value, services::Status * status) = 0;
+    virtual SyclEventIface & fill(UniversalBuffer dest, double value, services::Status * status, bool isSync = true) = 0;
 
     virtual UniversalBuffer allocate(TypeId type, size_t bufferSize, services::Status * status) = 0;
 
@@ -374,7 +373,8 @@ public:
 
     virtual InfoDevice & getInfoDevice() = 0;
 
-    virtual SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status) = 0;
+    virtual SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status,
+                                  bool isSync = true) = 0;
 };
 
 /**
@@ -400,7 +400,7 @@ public:
 class CpuExecutionContextImpl : public Base, public ExecutionContextIface
 {
 public:
-    CpuExecutionContextImpl()
+    CpuExecutionContextImpl() : _dummyEvent()
     {
         _infoDevice.isCpu                  = true;
         _infoDevice.max_work_item_sizes_1d = 0;
@@ -449,16 +449,16 @@ public:
     }
 
     SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, UniversalBuffer src, size_t srcOffset, size_t count,
-                          services::Status * status = NULL) DAAL_C11_OVERRIDE
+                          services::Status * status = NULL, bool isSync = true) DAAL_C11_OVERRIDE
     {
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
-        return SyclEventIface {};
+        return _dummyEvent;
     }
 
     SyclEventIface & fill(UniversalBuffer dest, double value, services::Status * status = NULL, bool isSync = true) DAAL_C11_OVERRIDE
     {
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
-        return SyclEventIface {};
+        return _dummyEvent;
     }
 
     UniversalBuffer allocate(TypeId type, size_t bufferSize, services::Status * status = NULL) DAAL_C11_OVERRIDE
@@ -471,16 +471,18 @@ public:
 
     InfoDevice & getInfoDevice() DAAL_C11_OVERRIDE { return _infoDevice; }
 
-    SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count,
-                          services::Status * status = NULL) DAAL_C11_OVERRIDE
+    SyclEventIface & copy(UniversalBuffer dest, size_t desOffset, void * src, size_t srcOffset, size_t count, services::Status * status = NULL,
+                          bool isSync = true) DAAL_C11_OVERRIDE
     {
         services::internal::tryAssignStatus(status, services::ErrorMethodNotImplemented);
-        return SyclEventIface {};
+        return _dummyEvent;
     }
 
 private:
     CpuKernelFactory _factory;
     InfoDevice _infoDevice;
+
+    SyclEventIface _dummyEvent;
 };
 
 /** @} */
@@ -498,6 +500,7 @@ using interface1::KernelIface;
 using interface1::KernelPtr;
 using interface1::ClKernelFactoryIface;
 using interface1::InfoDevice;
+using interface1::SyclEventIface;
 using interface1::ExecutionContextIface;
 using interface1::CpuKernelFactory;
 using interface1::CpuExecutionContextImpl;
