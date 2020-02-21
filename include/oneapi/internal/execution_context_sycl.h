@@ -196,18 +196,15 @@ public:
 
     SyclEventImpl(const cl::sycl::event & event) : _event(event) {}
 
-    void operator=(const cl::sycl::event & event) { _event = event; }
-
     void wait() { _event.wait(); }
 
     void waitAndThrow() { _event.wait_and_throw(); }
 
 private:
     cl::sycl::event _event;
-}
+};
 
-class SyclExecutionContextImpl : public Base,
-                                 public ExecutionContextIface
+class SyclExecutionContextImpl : public Base, public ExecutionContextIface
 {
 public:
     explicit SyclExecutionContextImpl(const cl::sycl::queue & deviceQueue)

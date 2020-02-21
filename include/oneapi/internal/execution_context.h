@@ -325,16 +325,15 @@ struct InfoDevice
  */
 class SyclEventIface
 {
+public:
     SyclEventIface() {}
 
     virtual ~SyclEventIface() {}
 
-    virtual void operator=() {}
-
     virtual void wait() {}
 
     virtual void waitAndThrow() {}
-}
+};
 
 /**
  *  <a name="DAAL-CLASS-ONEAPI-INTERNAL__EXECUTIONCONTEXTIFACE"></a>

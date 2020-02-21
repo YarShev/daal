@@ -19,6 +19,9 @@
 #define __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_H__
 
 #include "oneapi/internal/types.h"
+#ifdef DAAL_SYCL_INTERFACE
+    #include <CL/sycl.hpp>
+#endif
 
 namespace daal
 {
@@ -62,6 +65,7 @@ public:
         return dispatchInternal(type, op, FloatTypes());
     }
 
+#ifdef DAAL_SYCL_INTERFACE
     template <typename Operation>
     static auto dispatch(TypeId type, Operation && op) -> cl::sycl::event
     {
@@ -73,6 +77,7 @@ public:
     {
         return dispatchInternal(type, op, FloatTypes());
     }
+#endif
 
 private:
     template <typename Operation, typename Head, typename... Rest>
@@ -95,6 +100,7 @@ private:
         return;
     }
 
+#ifdef DAAL_SYCL_INTERFACE
     template <typename Operation, typename Head, typename... Rest>
     static auto dispatchInternal(TypeId type, Operation && op, Typelist<Head, Rest...>) -> cl::sycl::event
     {
@@ -114,6 +120,7 @@ private:
         DAAL_ASSERT(!"Unknown type");
         return cl::sycl::event {};
     }
+#endif
 };
 
 /**
