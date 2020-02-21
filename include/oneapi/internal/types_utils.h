@@ -46,6 +46,12 @@ typedef Typelist<daal::oneapi::internal::int8_t, daal::oneapi::internal::int16_t
 
 typedef Typelist<daal::oneapi::internal::float32_t, daal::oneapi::internal::float64_t> FloatTypes;
 
+struct SyclEventExist
+{};
+
+struct SyclEventNoExist
+{};
+
 /**
  *  <a name="DAAL-CLASS-ONEAPI-INTERNAL__TYPEDISPATCHER"></a>
  *  \brief Makes runtime dispatching of types
@@ -53,35 +59,47 @@ typedef Typelist<daal::oneapi::internal::float32_t, daal::oneapi::internal::floa
 class TypeDispatcher
 {
 public:
-    template <typename Operation>
-    static auto dispatch(TypeId type, Operation && op) -> void
+    template <typename Operation, typename SyclEventExistType>
+    static auto dispatch(TypeId type, Operation && op, SyclEventExistType isExist) -> void = delete;
+
+    template <typename Operation, typename SyclEventExistType>
+    static auto floatDispatch(TypeId type, Operation && op, SyclEventExistType isExist) -> void = delete;
+
+    template <typename Operation, SyclEventNoExist>
+    static auto dispatch(TypeId type, Operation && op, SyclEventNoExist isExist) -> void
     {
         return dispatchInternal(type, op, PrimitiveTypes());
     }
 
-    template <typename Operation>
-    static auto floatDispatch(TypeId type, Operation && op) -> void
+    template <typename Operation, SyclEventNoExist>
+    static auto floatDispatch(TypeId type, Operation && op, SyclEventNoExist isExist) -> void
     {
         return dispatchInternal(type, op, FloatTypes());
     }
 
 #ifdef DAAL_SYCL_INTERFACE
-    template <typename Operation>
-    static auto dispatch(TypeId type, Operation && op) -> cl::sycl::event
+    template <typename Operation, SyclEventExist>
+    static auto dispatch(TypeId type, Operation && op, SyclEventExist isExist) -> cl::sycl::event
     {
         return dispatchInternal(type, op, PrimitiveTypes());
     }
 
-    template <typename Operation>
-    static auto floatDispatch(TypeId type, Operation && op) -> cl::sycl::event
+    template <typename Operation, SyclEventExist>
+    static auto floatDispatch(TypeId type, Operation && op, SyclEventExist isExist) -> cl::sycl::event
     {
-        return dispatchInternal(type, op, FloatTypes());
+        return dispatchInternal(type, op, isSync, FloatTypes());
     }
 #endif
 
 private:
-    template <typename Operation, typename Head, typename... Rest>
-    static auto dispatchInternal(TypeId type, Operation && op, Typelist<Head, Rest...>) -> void
+    template <typename Operation, typename SyclEventExistType>
+    static auto dispatchInternal(TypeId type, Operation && op, SyclEventExistType isExist, Typelist<Head, Rest...>) -> void = delete;
+
+    template <typename Operation, typename SyclEventExistType>
+    static auto dispatchInternal(TypeId type, Operation && op, SyclEventExistType isExist, Typelist<>) -> void = delete;
+
+    template <typename Operation, SyclEventNoExist, typename Head, typename... Rest>
+    static auto dispatchInternal(TypeId type, Operation && op, SyclEventNoExist isExist, Typelist<Head, Rest...>) -> void
     {
         if (type == TypeIds::id<Head>())
         {
@@ -93,16 +111,16 @@ private:
         }
     }
 
-    template <typename Operation>
-    static auto dispatchInternal(TypeId type, Operation && op, Typelist<>) -> void
+    template <typename Operation, SyclEventNoExist>
+    static auto dispatchInternal(TypeId type, Operation && op, SyclEventNoExist isExist, Typelist<>) -> void
     {
         DAAL_ASSERT(!"Unknown type");
         return;
     }
 
 #ifdef DAAL_SYCL_INTERFACE
-    template <typename Operation, typename Head, typename... Rest>
-    static auto dispatchInternal(TypeId type, Operation && op, Typelist<Head, Rest...>) -> cl::sycl::event
+    template <typename Operation, SyclEventExist, typename Head, typename... Rest>
+    static auto dispatchInternal(TypeId type, Operation && op, SyclEventExist isExist, Typelist<Head, Rest...>) -> cl::sycl::event
     {
         if (type == TypeIds::id<Head>())
         {
@@ -114,8 +132,8 @@ private:
         }
     }
 
-    template <typename Operation>
-    static auto dispatchInternal(TypeId type, Operation && op, Typelist<>) -> cl::sycl::event
+    template <typename Operation, SyclEventExist>
+    static auto dispatchInternal(TypeId type, Operation && op, SyclEventExist isExist, Typelist<>) -> cl::sycl::event
     {
         DAAL_ASSERT(!"Unknown type");
         return cl::sycl::event {};
@@ -144,6 +162,8 @@ services::String getKeyFPType(TypeId typeId);
 
 } // namespace interface1
 
+using interface1::SyclEventExist;
+using interface1::SyclEventNoExist;
 using interface1::Typelist;
 using interface1::TypeDispatcher;
 using interface1::getKeyFPType;

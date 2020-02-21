@@ -15,10 +15,12 @@
 * limitations under the License.
 *******************************************************************************/
 
-#ifndef __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
-#define __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
+#ifdef DAAL_SYCL_INTERFACE
 
-#include "oneapi/internal/types_utils.h"
+    #ifndef __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
+        #define __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
+
+        #include "oneapi/internal/types_utils.h"
 
 namespace daal
 {
@@ -58,7 +60,7 @@ public:
     static UniversalBuffer allocate(TypeId type, size_t bufferSize)
     {
         Allocate allocateOp(bufferSize);
-        TypeDispatcher::dispatch(type, allocateOp);
+        TypeDispatcher::dispatch(type, allocateOp, SyclEventNoExist {});
         return allocateOp.buffer;
     }
 };
@@ -111,7 +113,7 @@ public:
                      bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op);
+        return TypeDispatcher::dispatch(dest.type(), op, event, SyclEventExist {});
     }
 };
 
@@ -162,7 +164,7 @@ public:
                      bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op);
+        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist {});
     }
 };
 
@@ -207,7 +209,7 @@ public:
     static auto fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, value, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op);
+        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist {});
     }
 };
 
@@ -221,5 +223,7 @@ using interface1::BufferFiller;
 } // namespace internal
 } // namespace oneapi
 } // namespace daal
+
+    #endif
 
 #endif

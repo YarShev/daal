@@ -131,7 +131,7 @@ public:
                     const size_t ldc, const size_t offsetC, services::Status * status)
     {
         Execute op(queue, transa, transb, m, n, k, alpha, a_buffer, lda, offsetA, b_buffer, ldb, offsetB, beta, c_buffer, ldc, offsetC, status);
-        TypeDispatcher::floatDispatch(a_buffer.type(), op);
+        TypeDispatcher::floatDispatch(a_buffer.type(), op, SyclEventNoExist {});
         return;
     }
 };
@@ -208,7 +208,7 @@ public:
                     UniversalBuffer & c_buffer, const size_t ldc, const size_t offsetC, services::Status * status)
     {
         Execute op(queue, upper_lower, trans, n, k, alpha, a_buffer, lda, offsetA, beta, c_buffer, ldc, offsetC, status);
-        TypeDispatcher::floatDispatch(a_buffer.type(), op);
+        TypeDispatcher::floatDispatch(a_buffer.type(), op, SyclEventNoExist {});
         return;
     }
 };
@@ -271,7 +271,7 @@ public:
                     UniversalBuffer y_buffer, const int incy, services::Status * status = NULL)
     {
         Execute op(queue, n, a, x_buffer, incx, y_buffer, incy, status);
-        TypeDispatcher::floatDispatch(x_buffer.type(), op);
+        TypeDispatcher::floatDispatch(x_buffer.type(), op, SyclEventNoExist {});
         return;
     }
 };
