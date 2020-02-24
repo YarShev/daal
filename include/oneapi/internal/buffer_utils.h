@@ -69,7 +69,6 @@ public:
         auto destHostPtr   = destSubBuffer.toHost(readWrite);
 
         VectorDownCast<DataType, T>()(_size, srcHostPtr.get(), destHostPtr.get());
-        return;
     }
 
 private:

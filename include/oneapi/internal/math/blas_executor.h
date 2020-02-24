@@ -132,7 +132,6 @@ public:
     {
         Execute op(queue, transa, transb, m, n, k, alpha, a_buffer, lda, offsetA, b_buffer, ldb, offsetB, beta, c_buffer, ldc, offsetC, status);
         TypeDispatcher<SyclEventNoExist>::floatDispatch(a_buffer.type(), op);
-        return;
     }
 };
 
@@ -209,7 +208,6 @@ public:
     {
         Execute op(queue, upper_lower, trans, n, k, alpha, a_buffer, lda, offsetA, beta, c_buffer, ldc, offsetC, status);
         TypeDispatcher<SyclEventNoExist>::floatDispatch(a_buffer.type(), op);
-        return;
     }
 };
 
