@@ -69,6 +69,7 @@ public:
         auto destHostPtr   = destSubBuffer.toHost(readWrite);
 
         VectorDownCast<DataType, T>()(_size, srcHostPtr.get(), destHostPtr.get());
+        return;
     }
 
 private:
@@ -123,6 +124,7 @@ public:
             VectorUpCast<T, DataType>()(_size, memoryBlock.get(), bufferHostPtr.get());
         }
         _dest = bufferBlock;
+        return;
     }
 
     void operator()(Typelist<DataType>)
@@ -133,6 +135,7 @@ public:
         auto subbuffer = buffer.getSubBuffer(_offset, _size);
 
         _dest = subbuffer;
+        return;
     }
 
 private:
@@ -170,6 +173,7 @@ public:
         auto ptr    = buffer.toHost(_mode);
 
         _reinterpretedPtr = services::reinterpretPointerCast<DataType, T>(ptr);
+        return;
     }
 
 private:

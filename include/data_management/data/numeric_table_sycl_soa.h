@@ -479,7 +479,7 @@ protected:
                 NumericTableFeature f = (*_ddict)[i];
 
                 BufferHostReinterpreter<char> reinterpreter(_arrays[i], rwMode, nrows);
-                TypeDispatcher::dispatch(_arrays[i].type(), reinterpreter);
+                TypeDispatcher::dispatch(_arrays[i].type(), reinterpreter, SyclEventNoExist::isNotExist);
 
                 services::Status st;
                 auto charPtr = reinterpreter.getResult(st);
@@ -527,7 +527,7 @@ private:
         {
             auto featureUniBuffer = _arrays[j];
             BufferConverterTo<T> converter(featureUniBuffer, idx, nrows);
-            TypeDispatcher::dispatch(featureUniBuffer.type(), converter);
+            TypeDispatcher::dispatch(featureUniBuffer.type(), converter, SyclEventNoExist::isNotExist);
 
             services::Status st;
             auto buffer = converter.getResult(st);
@@ -535,7 +535,7 @@ private:
 
             auto colSharedPtr = buffer.toHost(readOnly, &st);
             DAAL_CHECK_STATUS_VAR(st);
-            T * colPtr        = colSharedPtr.get();
+            T * colPtr = colSharedPtr.get();
 
             for (size_t i = 0; i < nrows; i++)
             {
@@ -560,9 +560,9 @@ private:
             auto blockBuffer    = block.getBuffer();
             auto blockSharedPtr = blockBuffer.toHost(readOnly, &st);
             DAAL_CHECK_STATUS_VAR(st);
-            T * blockPtr        = blockSharedPtr.get();
+            T * blockPtr = blockSharedPtr.get();
 
-            auto & context = getDefaultContext();
+            auto & context  = getDefaultContext();
             auto tempColumn = context.allocate(TypeIds::id<T>(), nrows, &st);
             DAAL_CHECK_STATUS_VAR(st);
 
@@ -571,7 +571,7 @@ private:
                 {
                     auto tempColumnSharedPtr = tempColumn.template get<T>().toHost(readWrite, &st);
                     DAAL_CHECK_STATUS_VAR(st);
-                    T * tempColumnPtr        = tempColumnSharedPtr.get();
+                    T * tempColumnPtr = tempColumnSharedPtr.get();
 
                     for (size_t i = 0; i < nrows; i++)
                     {
@@ -581,7 +581,7 @@ private:
 
                 auto uniBuffer = _arrays[j];
                 BufferConverterFrom<T> converter(tempColumn, uniBuffer, 0, nrows);
-                TypeDispatcher::dispatch(uniBuffer.type(), converter);
+                TypeDispatcher::dispatch(uniBuffer.type(), converter, SyclEventNoExist::isNotExist);
 
                 _arrays[j] = converter.getResult(st);
                 DAAL_CHECK_STATUS_VAR(st);
@@ -596,7 +596,7 @@ private:
     {
         using namespace oneapi::internal;
 
-        const size_t nobs  = getNumberOfRows();
+        const size_t nobs = getNumberOfRows();
         block.setDetails(feat_idx, idx, rwFlag);
 
         if (idx >= nobs)
@@ -614,7 +614,7 @@ private:
 
         auto uniBuffer = _arrays[feat_idx];
         BufferConverterTo<T> converter(uniBuffer, idx, nrows);
-        TypeDispatcher::dispatch(uniBuffer.type(), converter);
+        TypeDispatcher::dispatch(uniBuffer.type(), converter, SyclEventNoExist::isNotExist);
         services::Status st;
 
         auto buffer = converter.getResult(st);
@@ -639,7 +639,7 @@ private:
             {
                 auto uniBuffer = _arrays[feat_idx];
                 BufferConverterFrom<T> converter(block.getBuffer(), uniBuffer, block.getRowsOffset(), block.getNumberOfRows());
-                TypeDispatcher::dispatch(uniBuffer.type(), converter);
+                TypeDispatcher::dispatch(uniBuffer.type(), converter, SyclEventNoExist::isNotExist);
 
                 services::Status st;
                 _arrays[feat_idx] = converter.getResult(st);

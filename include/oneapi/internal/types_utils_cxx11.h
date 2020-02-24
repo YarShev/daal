@@ -60,7 +60,7 @@ public:
     static UniversalBuffer allocate(TypeId type, size_t bufferSize)
     {
         Allocate allocateOp(bufferSize);
-        TypeDispatcher::dispatch(type, allocateOp, SyclEventNoExist {});
+        TypeDispatcher::dispatch(type, allocateOp, SyclEventNoExist::isNotExist);
         return allocateOp.buffer;
     }
 };
@@ -109,11 +109,23 @@ private:
     };
 
 public:
+    template <typename SyclEventExistType>
+    static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
+                     bool isSync = true) -> void
+    {}
+
+    static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
+                     bool isSync = true) -> void
+    {
+        Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
+        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist::isExist);
+    }
+
     static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
                      bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op, event, SyclEventExist {});
+        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist::isExist);
     }
 };
 
@@ -164,7 +176,7 @@ public:
                      bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist {});
+        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist::isExist);
     }
 };
 
@@ -209,7 +221,7 @@ public:
     static auto fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true) -> cl::sycl::event
     {
         Execute op(queue, dest, value, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist {});
+        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist::isExist);
     }
 };
 

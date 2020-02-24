@@ -46,11 +46,15 @@ typedef Typelist<daal::oneapi::internal::int8_t, daal::oneapi::internal::int16_t
 
 typedef Typelist<daal::oneapi::internal::float32_t, daal::oneapi::internal::float64_t> FloatTypes;
 
-struct SyclEventExist
-{};
+enum class SyclEventExist : int32_t
+{
+    isExist = 1
+};
 
-struct SyclEventNoExist
-{};
+enum class SyclEventNoExist : uint32_t
+{
+    isNotExist = 1
+};
 
 /**
  *  <a name="DAAL-CLASS-ONEAPI-INTERNAL__TYPEDISPATCHER"></a>
@@ -60,45 +64,41 @@ class TypeDispatcher
 {
 public:
     template <typename Operation, typename SyclEventExistType>
-    static auto dispatch(TypeId type, Operation && op, SyclEventExistType isExist) -> void = delete;
+    static auto dispatch(TypeId type, Operation && op, SyclEventExistType isExist) -> void
+    {}
 
     template <typename Operation, typename SyclEventExistType>
-    static auto floatDispatch(TypeId type, Operation && op, SyclEventExistType isExist) -> void = delete;
+    static auto floatDispatch(TypeId type, Operation && op, SyclEventExistType isExist) -> void
+    {}
 
     template <typename Operation, SyclEventNoExist>
     static auto dispatch(TypeId type, Operation && op, SyclEventNoExist isExist) -> void
     {
-        return dispatchInternal(type, op, PrimitiveTypes());
+        return dispatchInternal(type, op, PrimitiveTypes(), isExist);
     }
 
     template <typename Operation, SyclEventNoExist>
     static auto floatDispatch(TypeId type, Operation && op, SyclEventNoExist isExist) -> void
     {
-        return dispatchInternal(type, op, FloatTypes());
+        return dispatchInternal(type, op, FloatTypes(), isExist);
     }
 
 #ifdef DAAL_SYCL_INTERFACE
     template <typename Operation, SyclEventExist>
     static auto dispatch(TypeId type, Operation && op, SyclEventExist isExist) -> cl::sycl::event
     {
-        return dispatchInternal(type, op, PrimitiveTypes());
+        return dispatchInternal(type, op, PrimitiveTypes(), isExist);
     }
 
     template <typename Operation, SyclEventExist>
     static auto floatDispatch(TypeId type, Operation && op, SyclEventExist isExist) -> cl::sycl::event
     {
-        return dispatchInternal(type, op, isSync, FloatTypes());
+        return dispatchInternal(type, op, FloatTypes(), isExist);
     }
 #endif
 
 private:
-    template <typename Operation, typename SyclEventExistType>
-    static auto dispatchInternal(TypeId type, Operation && op, SyclEventExistType isExist, Typelist<Head, Rest...>) -> void = delete;
-
-    template <typename Operation, typename SyclEventExistType>
-    static auto dispatchInternal(TypeId type, Operation && op, SyclEventExistType isExist, Typelist<>) -> void = delete;
-
-    template <typename Operation, SyclEventNoExist, typename Head, typename... Rest>
+    template <typename Operation, typename Head, typename... Rest>
     static auto dispatchInternal(TypeId type, Operation && op, SyclEventNoExist isExist, Typelist<Head, Rest...>) -> void
     {
         if (type == TypeIds::id<Head>())
@@ -111,7 +111,7 @@ private:
         }
     }
 
-    template <typename Operation, SyclEventNoExist>
+    template <typename Operation>
     static auto dispatchInternal(TypeId type, Operation && op, SyclEventNoExist isExist, Typelist<>) -> void
     {
         DAAL_ASSERT(!"Unknown type");
@@ -119,7 +119,7 @@ private:
     }
 
 #ifdef DAAL_SYCL_INTERFACE
-    template <typename Operation, SyclEventExist, typename Head, typename... Rest>
+    template <typename Operation, typename Head, typename... Rest>
     static auto dispatchInternal(TypeId type, Operation && op, SyclEventExist isExist, Typelist<Head, Rest...>) -> cl::sycl::event
     {
         if (type == TypeIds::id<Head>())
@@ -132,7 +132,7 @@ private:
         }
     }
 
-    template <typename Operation, SyclEventExist>
+    template <typename Operation>
     static auto dispatchInternal(TypeId type, Operation && op, SyclEventExist isExist, Typelist<>) -> cl::sycl::event
     {
         DAAL_ASSERT(!"Unknown type");
@@ -153,6 +153,7 @@ struct TypeToStringConverter
     void operator()(Typelist<T>)
     {
         result = daal::oneapi::internal::getKeyFPType<T>();
+        return;
     }
 };
 
