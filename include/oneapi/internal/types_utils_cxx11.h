@@ -15,12 +15,10 @@
 * limitations under the License.
 *******************************************************************************/
 
-#ifdef DAAL_SYCL_INTERFACE
+#ifndef __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
+#define __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
 
-    #ifndef __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
-        #define __DAAL_ONEAPI_INTERNAL_TYPES_UTILS_CXX11_H__
-
-        #include "oneapi/internal/types_utils.h"
+#include "oneapi/internal/types_utils.h"
 
 namespace daal
 {
@@ -60,7 +58,7 @@ public:
     static UniversalBuffer allocate(TypeId type, size_t bufferSize)
     {
         Allocate allocateOp(bufferSize);
-        TypeDispatcher::dispatch(type, allocateOp, SyclEventNoExist::isNotExist);
+        TypeDispatcher<SyclEventNoExist>::dispatch(type, allocateOp);
         return allocateOp.buffer;
     }
 };
@@ -88,7 +86,7 @@ private:
         {}
 
         template <typename T>
-        auto operator()(Typelist<T>) -> cl::sycl::event
+        cl::sycl::event operator()(Typelist<T>)
         {
             auto src              = srcUnivers.get<T>().toSycl();
             auto dst              = dstUnivers.get<T>().toSycl();
@@ -109,23 +107,11 @@ private:
     };
 
 public:
-    template <typename SyclEventExistType>
-    static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
-                     bool isSync = true) -> void
-    {}
-
-    static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
-                     bool isSync = true) -> void
+    static cl::sycl::event copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset,
+                                size_t count, bool isSync = true)
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist::isExist);
-    }
-
-    static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, UniversalBuffer & src, size_t srcOffset, size_t count,
-                     bool isSync = true) -> cl::sycl::event
-    {
-        Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist::isExist);
+        return TypeDispatcher<SyclEventExist>::dispatch(dest.type(), op);
     }
 };
 
@@ -152,7 +138,7 @@ private:
         {}
 
         template <typename T>
-        auto operator()(Typelist<T>) -> cl::sycl::event
+        cl::sycl::event operator()(Typelist<T>)
         {
             auto src              = (T *)srcArray;
             auto dst              = dstUnivers.get<T>().toSycl();
@@ -172,11 +158,11 @@ private:
     };
 
 public:
-    static auto copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, void * src, size_t srcOffset, size_t count,
-                     bool isSync = true) -> cl::sycl::event
+    static cl::sycl::event copy(cl::sycl::queue & queue, UniversalBuffer & dest, size_t dstOffset, void * src, size_t srcOffset, size_t count,
+                                bool isSync = true)
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist::isExist);
+        return TypeDispatcher<SyclEventExist>::dispatch(dest.type(), op);
     }
 };
 
@@ -199,7 +185,7 @@ private:
         {}
 
         template <typename T>
-        auto operator()(Typelist<T>) -> cl::sycl::event
+        cl::sycl::event operator()(Typelist<T>)
         {
             auto dst              = dstUnivers.get<T>().toSycl();
             cl::sycl::event event = queue.submit([&](cl::sycl::handler & cgh) {
@@ -218,10 +204,10 @@ private:
     };
 
 public:
-    static auto fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true) -> cl::sycl::event
+    static cl::sycl::event fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true)
     {
         Execute op(queue, dest, value, isSync);
-        return TypeDispatcher::dispatch(dest.type(), op, SyclEventExist::isExist);
+        return TypeDispatcher<SyclEventExist>::dispatch(dest.type(), op);
     }
 };
 
@@ -235,7 +221,5 @@ using interface1::BufferFiller;
 } // namespace internal
 } // namespace oneapi
 } // namespace daal
-
-    #endif
 
 #endif

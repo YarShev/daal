@@ -28,7 +28,7 @@ namespace interface1
 services::String getKeyFPType(TypeId typeId)
 {
     interface1::TypeToStringConverter converter;
-    TypeDispatcher::dispatch(typeId, converter, SyclEventNoExist::isNotExist);
+    TypeDispatcher<SyclEventNoExist>::dispatch(typeId, converter);
 
     return converter.result;
 }
