@@ -46,11 +46,11 @@ typedef Typelist<daal::oneapi::internal::int8_t, daal::oneapi::internal::int16_t
 
 typedef Typelist<daal::oneapi::internal::float32_t, daal::oneapi::internal::float64_t> FloatTypes;
 
-struct SyclEventNoExist
+struct NoReturnSyclEvent
 {};
 
 #ifdef DAAL_SYCL_INTERFACE
-struct SyclEventExist
+struct ReturnSyclEvent
 {};
 #endif
 
@@ -67,7 +67,7 @@ class TypeDispatcher
  *  \brief Makes runtime dispatching of types
  */
 template <>
-class TypeDispatcher<SyclEventNoExist>
+class TypeDispatcher<NoReturnSyclEvent>
 {
 public:
     template <typename Operation>
@@ -109,7 +109,7 @@ private:
  *  \brief Makes runtime dispatching of types
  */
 template <>
-class TypeDispatcher<SyclEventExist>
+class TypeDispatcher<ReturnSyclEvent>
 {
 public:
     template <typename Operation>
@@ -169,9 +169,9 @@ services::String getKeyFPType(TypeId typeId);
 } // namespace interface1
 
 #ifdef DAAL_SYCL_INTERFACE
-using interface1::SyclEventExist;
+using interface1::ReturnSyclEvent;
 #endif
-using interface1::SyclEventNoExist;
+using interface1::NoReturnSyclEvent;
 using interface1::Typelist;
 using interface1::TypeDispatcher;
 using interface1::getKeyFPType;

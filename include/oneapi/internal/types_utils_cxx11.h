@@ -57,7 +57,7 @@ public:
     static UniversalBuffer allocate(TypeId type, size_t bufferSize)
     {
         Allocate allocateOp(bufferSize);
-        TypeDispatcher<SyclEventNoExist>::dispatch(type, allocateOp);
+        TypeDispatcher<NoReturnSyclEvent>::dispatch(type, allocateOp);
         return allocateOp.buffer;
     }
 };
@@ -107,7 +107,7 @@ public:
                                 size_t count, bool isSync = true)
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher<SyclEventExist>::dispatch(dest.type(), op);
+        return TypeDispatcher<ReturnSyclEvent>::dispatch(dest.type(), op);
     }
 };
 
@@ -155,7 +155,7 @@ public:
                                 bool isSync = true)
     {
         Execute op(queue, dest, dstOffset, src, srcOffset, count, isSync);
-        return TypeDispatcher<SyclEventExist>::dispatch(dest.type(), op);
+        return TypeDispatcher<ReturnSyclEvent>::dispatch(dest.type(), op);
     }
 };
 
@@ -197,7 +197,7 @@ public:
     static cl::sycl::event fill(cl::sycl::queue & queue, UniversalBuffer & dest, double value, bool isSync = true)
     {
         Execute op(queue, dest, value, isSync);
-        return TypeDispatcher<SyclEventExist>::dispatch(dest.type(), op);
+        return TypeDispatcher<ReturnSyclEvent>::dispatch(dest.type(), op);
     }
 };
 
