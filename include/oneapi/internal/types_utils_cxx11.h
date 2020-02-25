@@ -98,10 +98,7 @@ private:
             {
                 event.wait();
             }
-            else
-            {
-                return event;
-            }
+            return event;
         }
     };
 
@@ -149,10 +146,7 @@ private:
             {
                 event.wait();
             }
-            else
-            {
-                return event;
-            }
+            return event;
         }
     };
 
@@ -195,10 +189,7 @@ private:
             {
                 event.wait();
             }
-            else
-            {
-                return event;
-            }
+            return event;
         }
     };
 
