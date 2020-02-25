@@ -73,13 +73,13 @@ public:
     template <typename Operation>
     static void dispatch(TypeId type, Operation && op)
     {
-        return dispatchInternal(type, op, PrimitiveTypes());
+        dispatchInternal(type, op, PrimitiveTypes());
     }
 
     template <typename Operation>
     static void floatDispatch(TypeId type, Operation && op)
     {
-        return dispatchInternal(type, op, FloatTypes());
+        dispatchInternal(type, op, FloatTypes());
     }
 
 private:
@@ -88,11 +88,11 @@ private:
     {
         if (type == TypeIds::id<Head>())
         {
-            return op(Typelist<Head>());
+            op(Typelist<Head>());
         }
         else
         {
-            return dispatchInternal(type, op, Typelist<Rest...>());
+            dispatchInternal(type, op, Typelist<Rest...>());
         }
     }
 
@@ -100,7 +100,6 @@ private:
     static void dispatchInternal(TypeId type, Operation && op, Typelist<>)
     {
         DAAL_ASSERT(!"Unknown type");
-        return;
     }
 };
 
@@ -160,7 +159,6 @@ struct TypeToStringConverter
     void operator()(Typelist<T>)
     {
         result = daal::oneapi::internal::getKeyFPType<T>();
-        return;
     }
 };
 

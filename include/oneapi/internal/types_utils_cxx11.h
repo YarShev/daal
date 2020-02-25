@@ -50,7 +50,6 @@ private:
         void operator()(Typelist<T>)
         {
             buffer = services::Buffer<T>(cl::sycl::buffer<T, 1>(bufferSize));
-            return;
         }
     };
 
